@@ -1,0 +1,20 @@
+{
+    "name": "admin/wa-bot-panel",
+    "description": "Web panel for monitoring WhatsApp bot file submissions",
+    "type": "project",
+    "require": {
+        "php": ">=7.4",
+        "vlucas/phpdotenv": "^5.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Admin",
+            "email": "admin@example.com"
+        }
+    ]
+}

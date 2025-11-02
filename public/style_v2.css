@@ -1,0 +1,177 @@
+/* Import Font dari Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* Gaya dasar untuk body */
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f8f9fa;
+}
+
+/* --- Gaya Navbar Ultra-Clean --- */
+.navbar {
+    background-color: #ffffff !important;
+    padding: 1rem 2rem;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.07);
+}
+.navbar-brand {
+    font-weight: 700; font-size: 1.25rem; color: #212529 !important;
+}
+.navbar-brand i { color: #0d6efd; }
+.navbar .nav-link {
+    color: #6c757d !important; font-weight: 500;
+    padding: 0.6rem 1rem !important; border-radius: 0.5rem;
+    margin: 0 0.25rem; transition: all 0.2s ease-in-out;
+}
+.navbar .nav-link:hover { background-color: #eef2f7; color: #0d6efd !important; }
+.navbar .nav-link.active { background-color: #0d6efd; color: #ffffff !important; font-weight: 600; }
+.dropdown-menu {
+    border: none;
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    border-radius: 0.5rem;
+}
+.dropdown-item.active, .dropdown-item:active { background-color: #0d6efd; }
+
+
+/* === CSS KUNCI UNTUK SUBMENU BERTINGKAT (VERSI FINAL) === */
+.dropdown-menu li {
+    position: relative;
+}
+.dropdown-menu .dropend .dropdown-menu {
+    top: -0.5rem; /* Posisikan submenu sedikit ke atas agar sejajar */
+    left: 100%;
+    margin-left: .125rem;
+}
+
+/* Panah penunjuk submenu */
+.dropdown-item.dropdown-toggle::after {
+    display: inline-block;
+    margin-left: .255em;
+    vertical-align: .255em;
+    content: "";
+    border-top: .3em solid transparent;
+    border-right: 0;
+    border-bottom: .3em solid transparent;
+    border-left: .3em solid;
+}
+/* Arahkan panah saat di-hover */
+.dropdown-item.dropdown-toggle:hover::after {
+    transform: rotate(-90deg);
+}
+/* === AKHIR CSS KUNCI === */
+
+
+/* --- Gaya Konten Utama --- */
+.page-content { padding: 2rem; }
+.card { border: none; border-radius: 0.75rem; }
+
+/* --- Dashboard Statistic Cards --- */
+.dashboard-stats .stat-card {
+    border-radius: 1rem;
+    border: none;
+    color: #ffffff;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 18px 40px -24px rgba(33, 37, 41, 0.5);
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+    background-color: transparent;
+}
+
+.dashboard-stats .stat-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 28px 50px -28px rgba(15, 23, 42, 0.55);
+}
+
+.stat-card .card-body {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    height: 100%;
+}
+
+.stat-card__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.stat-card__label {
+    font-size: 0.95rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    opacity: 0.85;
+}
+
+.stat-card__value {
+    font-size: 2.25rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.stat-card__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.18);
+    flex-shrink: 0;
+}
+
+.stat-card__icon i {
+    font-size: 1.85rem;
+}
+
+.stat-card__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1.25rem;
+    font-size: 0.9rem;
+}
+
+.stat-card__meta span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    opacity: 0.9;
+}
+
+.stat-card__meta strong {
+    font-weight: 600;
+}
+
+.stat-card__meta i {
+    font-size: 1.05rem;
+}
+
+@media (max-width: 575.98px) {
+    .stat-card .card-body {
+        padding: 1.25rem;
+    }
+
+    .stat-card__header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .stat-card__icon {
+        margin-top: 1rem;
+    }
+}
+
+/* Gradient variants */
+.gradient-trb { background: linear-gradient(135deg, #4361ee, #3a0ca3) !important; }
+.gradient-tu { background: linear-gradient(135deg, #4cc9f0, #4895ef) !important; }
+.gradient-amandarb { background: linear-gradient(135deg, #f72585, #b5179e) !important; }
+.gradient-total-partial { background: linear-gradient(135deg, #2ec4b6, #1a936f) !important; }
+.gradient-tpn { background: linear-gradient(135deg, #ff9e00, #ff5400) !important; }
+.gradient-tr { background: linear-gradient(135deg, #7209b7, #560bad) !important; }
+.gradient-to { background: linear-gradient(135deg, #2a9d8f, #1d3557) !important; }
+.gradient-amanta { background: linear-gradient(135deg, #e63946, #d90429) !important; }
+.gradient-amanda-panen { background: linear-gradient(135deg, #6a4c93, #4361ee) !important; }
+.gradient-tika-plasma { background: linear-gradient(135deg, #2d6a4f, #1b4332) !important; }
+.gradient-total { background: linear-gradient(135deg, #f77f00, #f48c06) !important; }
+.gradient-bim { background: linear-gradient(135deg, #0d6efd, #6610f2) !important; }
+.gradient-pps { background: linear-gradient(135deg, #20c997, #0c9c68) !important; }
