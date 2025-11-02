@@ -1,0 +1,23 @@
+# Environment configuration
+.env
+.env.*
+
+# Local dependencies
+/vendor/
+/node_modules/
+
+# Cache and logs
+*.log
+*.cache
+.phpunit.result.cache
+coverage/
+
+# Editor directories and files
+/.idea/
+/.vscode/
+.DS_Store
+Thumbs.db
+
+# Misc build artifacts
+/storage/
+/bootstrap/cache/
