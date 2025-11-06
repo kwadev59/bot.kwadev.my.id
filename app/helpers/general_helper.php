@@ -38,6 +38,9 @@ if (!function_exists('formatFileDate')) {
 
         $patterns = [
             'Ymd',
+            'dmY',
+            'dmYHi',
+            'dmYHis',
             'Y-m-d',
             'Y-m-d H:i:s',
             'd-m-Y',
