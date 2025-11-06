@@ -1,23 +1,24 @@
-# Environment configuration
+# Composer dependencies
+/vendor/
+
+# Environment files
 .env
 .env.*
 
-# Local dependencies
-/vendor/
-/node_modules/
-
-# Cache and logs
+# Logs and caches
 *.log
-*.cache
-.phpunit.result.cache
-coverage/
+cache/
+tmp/
 
-# Editor directories and files
-/.idea/
-/.vscode/
+# User-generated uploads or exports
+public/uploads/
+
+# IDE and editor settings
+.idea/
+.vscode/
+*.iml
+*.sublime-*
+
+# OS-specific files
 .DS_Store
 Thumbs.db
-
-# Misc build artifacts
-/storage/
-/bootstrap/cache/
