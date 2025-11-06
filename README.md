@@ -182,4 +182,4 @@ wa-bot-panel/
 ```
 
 ## Lisensi
-Proyek ini dibuat untuk kebutuhan internal monitoring dan tidak memiliki lisensi khusus.
+Proyek ini dibuat untuk kebutuhan internal monitoring dan tidak memiliki lisensi khusus.# bot.kwadev.my.id
