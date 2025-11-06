@@ -21,3 +21,7 @@ define('BOT_BASE_PATH', $_ENV['BOT_BASE_PATH']);
 
 // Tambahkan baris ini. Default-nya 'production' untuk keamanan.
 define('APP_ENV', $_ENV['APP_ENV'] ?? 'production');
+
+// Timezone aplikasi (default ke Asia/Jakarta agar konsisten dengan WIB)
+define('APP_TIMEZONE', $_ENV['APP_TIMEZONE'] ?? 'Asia/Jakarta');
+date_default_timezone_set(APP_TIMEZONE);
