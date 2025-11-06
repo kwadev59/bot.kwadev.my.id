@@ -8,7 +8,7 @@ Sistem web panel untuk monitoring file laporan yang dikirim melalui WhatsApp ke 
 ### Dashboard
 - Statistik real-time jumlah file TRB, TU, dan AmandaRB
 - Detail valid/invalid untuk setiap tipe file
-- Tabel 10 laporan terbaru
+- Tabel 10 laporan terbaruss
 
 ### Laporan
 - Halaman terpisah untuk laporan valid dan invalid
