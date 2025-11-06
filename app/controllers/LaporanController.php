@@ -72,19 +72,33 @@ class LaporanController extends Controller {
             return;
         }
 
-        $basePath = rtrim(BOT_BASE_PATH, '/');
+        $basePath = rtrim(str_replace('\\', '/', BOT_BASE_PATH), '/');
 
-        // hapus awalan storage-wa-bot/ kalau ada
-        $relativePath = preg_replace('/^storage-wa-bot[\/\\\\]/', '', $file['file_path']);
+        // hapus awalan storage-wa-bot/ kalau ada lalu rapikan separator
+        $relativePath = ltrim(str_replace('\\', '/', preg_replace('/^storage-wa-bot[\/\\\\]/', '', $file['file_path'])), '/');
 
-        // selalu coba path relatif apa adanya terlebih dahulu
-        $possiblePaths = [ "$basePath/$relativePath" ];
-
-        // kalau belum ada 'valid/' atau 'invalid/', tambahkan kandidat folder tersebut
-        if (!preg_match('/^(valid|invalid)\//', $relativePath)) {
-            $possiblePaths[] = "$basePath/valid/$relativePath";
-            $possiblePaths[] = "$basePath/invalid/$relativePath";
+        // kandidat base path: BOT_BASE_PATH & BOT_BASE_PATH/storage-wa-bot (kalau belum berada di sana)
+        $baseCandidates = [$basePath];
+        if (basename($basePath) !== 'storage-wa-bot') {
+            $baseCandidates[] = $basePath . '/storage-wa-bot';
+        } else {
+            $parentPath = str_replace('\\', '/', dirname($basePath));
+            if ($parentPath && $parentPath !== '.' && $parentPath !== $basePath) {
+                $baseCandidates[] = rtrim($parentPath, '/');
+            }
         }
+
+        $possiblePaths = [];
+        foreach ($baseCandidates as $candidateBase) {
+            $possiblePaths[] = "{$candidateBase}/{$relativePath}";
+
+            if (!preg_match('/^(valid|invalid)\//', $relativePath)) {
+                $possiblePaths[] = "{$candidateBase}/valid/{$relativePath}";
+                $possiblePaths[] = "{$candidateBase}/invalid/{$relativePath}";
+            }
+        }
+
+        $possiblePaths = array_values(array_unique(array_filter($possiblePaths)));
 
         $realPath = null;
         foreach ($possiblePaths as $path) {
