@@ -24,3 +24,5 @@ public/uploads/
 # OS-specific files
 .DS_Store
 Thumbs.db
+public/templates/.user.ini
+public/templates/.user.ini
