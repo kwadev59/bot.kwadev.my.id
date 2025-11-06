@@ -64,47 +64,55 @@ class LaporanController extends Controller {
     public function download($id) {
         $submissionModel = $this->model('Submission_model');
         $counterModel = $this->model('DownloadCounter_model');
-        
+
         $file = $submissionModel->getSubmissionById($id);
 
-        if ($file) {
-            $realPath = $this->resolveDownloadPath($file['file_path']);
+        if (!$file) {
+            echo "❌ Error: Data file dengan ID tersebut tidak ditemukan.";
+            return;
+        }
 
-            if ($realPath) {
-                $fileType = $file['file_type'];
-                if (in_array($fileType, ['TU', 'TRB', 'AMANDARB'])) {
-                    $counterModel->incrementDownload($file['file_name']);
-                    $counterModel->incrementDownload($fileType);
-                }
-                
-                header('Content-Description: File Transfer');
-                header('Content-Type: application/octet-stream');
-                header('Content-Disposition: attachment; filename="' . basename($file['file_path']) . '"');
-                header('Expires: 0');
-                header('Cache-Control: must-revalidate');
-                header('Pragma: public');
-                header('Content-Length: ' . filesize($realPath));
-                
-                if (ob_get_level()) {
-                    ob_end_clean();
-                }
-                flush();
-                readfile($realPath);
-                exit;
-            } else {
-                $message = "Error: File tidak ditemukan atau akses tidak diizinkan.";
+        $relativePath = preg_replace('/^storage-wa-bot[\/\\\\]/', '', $file['file_path']);
+        $basePath = rtrim(BOT_BASE_PATH, '/');
 
-                if (defined('APP_ENV') && APP_ENV !== 'production') {
-                    $message .= '<br><small>';
-                    $message .= 'Detail: file_path=' . htmlspecialchars($file['file_path'], ENT_QUOTES, 'UTF-8');
-                    $message .= ' | BOT_BASE_PATH=' . htmlspecialchars(BOT_BASE_PATH, ENT_QUOTES, 'UTF-8');
-                    $message .= '</small>';
-                }
+        // Coba beberapa lokasi alternatif
+        $possiblePaths = [
+            "$basePath/$relativePath",
+            "$basePath/valid/$relativePath",
+            "$basePath/invalid/$relativePath"
+        ];
 
-                echo $message;
+        $realPath = null;
+        foreach ($possiblePaths as $path) {
+            if (file_exists($path)) {
+                $realPath = realpath($path);
+                break;
             }
+        }
+
+        if ($realPath && file_exists($realPath)) {
+            $fileType = $file['file_type'];
+
+            if (in_array($fileType, ['TU', 'TRB', 'AMANDARB'])) {
+                $counterModel->incrementDownload($file['file_name']);
+                $counterModel->incrementDownload($fileType);
+            }
+
+            header('Content-Description: File Transfer');
+            header('Content-Type: application/octet-stream');
+            header('Content-Disposition: attachment; filename="' . basename($realPath) . '"');
+            header('Expires: 0');
+            header('Cache-Control: must-revalidate');
+            header('Pragma: public');
+            header('Content-Length: ' . filesize($realPath));
+
+            if (ob_get_level()) ob_end_clean();
+            flush();
+            readfile($realPath);
+            exit;
         } else {
-            echo "Error: Data file dengan ID tersebut tidak ditemukan.";
+            echo "❌ Error: File tidak ditemukan atau akses tidak diizinkan.<br>";
+            echo "Path dicek: <br><code>" . implode('<br>', $possiblePaths) . "</code>";
         }
     }
 
