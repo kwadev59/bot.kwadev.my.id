@@ -72,15 +72,20 @@ class LaporanController extends Controller {
             return;
         }
 
-        $relativePath = preg_replace('/^storage-wa-bot[\/\\\\]/', '', $file['file_path']);
         $basePath = rtrim(BOT_BASE_PATH, '/');
 
-        // Coba beberapa lokasi alternatif
-        $possiblePaths = [
-            "$basePath/$relativePath",
-            "$basePath/valid/$relativePath",
-            "$basePath/invalid/$relativePath"
-        ];
+        // hapus awalan storage-wa-bot/ kalau ada
+        $relativePath = preg_replace('/^storage-wa-bot[\/\\\\]/', '', $file['file_path']);
+
+        // kalau sudah ada 'valid/' atau 'invalid/', jangan tambahkan lagi
+        if (preg_match('/^(valid|invalid)\//', $relativePath)) {
+            $possiblePaths = [ "$basePath/$relativePath" ];
+        } else {
+            $possiblePaths = [
+                "$basePath/valid/$relativePath",
+                "$basePath/invalid/$relativePath"
+            ];
+        }
 
         $realPath = null;
         foreach ($possiblePaths as $path) {
