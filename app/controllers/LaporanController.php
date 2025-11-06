@@ -68,10 +68,9 @@ class LaporanController extends Controller {
         $file = $submissionModel->getSubmissionById($id);
 
         if ($file) {
-            $fullPath = BOT_BASE_PATH . '/' . $file['file_path'];
-            $realPath = realpath($fullPath);
+            $realPath = $this->resolveDownloadPath($file['file_path']);
 
-            if ($realPath && strpos($realPath, realpath(BOT_BASE_PATH)) === 0 && file_exists($realPath)) {
+            if ($realPath) {
                 $fileType = $file['file_type'];
                 if (in_array($fileType, ['TU', 'TRB', 'AMANDARB'])) {
                     $counterModel->incrementDownload($file['file_name']);
@@ -93,7 +92,16 @@ class LaporanController extends Controller {
                 readfile($realPath);
                 exit;
             } else {
-                echo "Error: File tidak ditemukan atau akses tidak diizinkan.";
+                $message = "Error: File tidak ditemukan atau akses tidak diizinkan.";
+
+                if (defined('APP_ENV') && APP_ENV !== 'production') {
+                    $message .= '<br><small>';
+                    $message .= 'Detail: file_path=' . htmlspecialchars($file['file_path'], ENT_QUOTES, 'UTF-8');
+                    $message .= ' | BOT_BASE_PATH=' . htmlspecialchars(BOT_BASE_PATH, ENT_QUOTES, 'UTF-8');
+                    $message .= '</small>';
+                }
+
+                echo $message;
             }
         } else {
             echo "Error: Data file dengan ID tersebut tidak ditemukan.";
@@ -156,6 +164,86 @@ class LaporanController extends Controller {
             header('Location: ' . BASE_URL . '/LaporanController/invalid');
             exit;
         }
+    }
+
+    /**
+     * Resolve full path untuk file yang ingin diunduh.
+     * Mengakomodasi konfigurasi BOT_BASE_PATH yang menunjuk ke root proyek
+     * atau langsung ke folder storage-wa-bot.
+     */
+    private function resolveDownloadPath($filePath) {
+        $normalizedFilePath = ltrim(str_replace('\\', '/', $filePath), '/');
+        $basePathRaw = rtrim(str_replace('\\', '/', BOT_BASE_PATH), '/');
+        $baseRealPath = realpath($basePathRaw);
+
+        if ($baseRealPath === false) {
+            return null;
+        }
+
+        $allowedRoots = [$baseRealPath];
+        $storageRealPath = null;
+
+        if (basename($baseRealPath) !== 'storage-wa-bot') {
+            $candidate = $baseRealPath . '/storage-wa-bot';
+            $storageRealPath = realpath($candidate);
+            if ($storageRealPath) {
+                $allowedRoots[] = $storageRealPath;
+            }
+        } else {
+            $parentRealPath = realpath(dirname($baseRealPath));
+            if ($parentRealPath) {
+                $allowedRoots[] = $parentRealPath;
+            }
+        }
+
+        $candidates = [];
+        $candidates[] = $baseRealPath . '/' . $normalizedFilePath;
+
+        if ($storageRealPath) {
+            $candidates[] = $storageRealPath . '/' . $normalizedFilePath;
+        } elseif (basename($baseRealPath) === 'storage-wa-bot') {
+            if (strpos($normalizedFilePath, 'storage-wa-bot/') === 0) {
+                $trimmed = substr($normalizedFilePath, strlen('storage-wa-bot/'));
+                $candidates[] = $baseRealPath . '/' . $trimmed;
+                $parentRealPath = realpath(dirname($baseRealPath));
+                if ($parentRealPath) {
+                    $candidates[] = $parentRealPath . '/' . $trimmed;
+                }
+            } else {
+                $parentRealPath = realpath(dirname($baseRealPath));
+                if ($parentRealPath) {
+                    $candidates[] = $parentRealPath . '/' . $normalizedFilePath;
+                }
+            }
+        } else {
+            if (strpos($normalizedFilePath, 'storage-wa-bot/') !== 0) {
+                $candidates[] = $baseRealPath . '/storage-wa-bot/' . $normalizedFilePath;
+            }
+        }
+
+        $uniqueCandidates = array_unique(array_filter($candidates));
+
+        foreach ($uniqueCandidates as $candidate) {
+            $realCandidate = realpath($candidate);
+            if ($realCandidate && is_file($realCandidate) && $this->isPathWithinAllowedRoots($realCandidate, $allowedRoots)) {
+                return $realCandidate;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Pastikan path hasil resolve masih berada dalam root yang diizinkan.
+     */
+    private function isPathWithinAllowedRoots($path, array $roots) {
+        foreach ($roots as $root) {
+            if ($root && strpos($path, $root) === 0) {
+                return true;
+            }
+        }
+
+        return false;
     }
     
     /**
