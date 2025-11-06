@@ -77,14 +77,13 @@ class LaporanController extends Controller {
         // hapus awalan storage-wa-bot/ kalau ada
         $relativePath = preg_replace('/^storage-wa-bot[\/\\\\]/', '', $file['file_path']);
 
-        // kalau sudah ada 'valid/' atau 'invalid/', jangan tambahkan lagi
-        if (preg_match('/^(valid|invalid)\//', $relativePath)) {
-            $possiblePaths = [ "$basePath/$relativePath" ];
-        } else {
-            $possiblePaths = [
-                "$basePath/valid/$relativePath",
-                "$basePath/invalid/$relativePath"
-            ];
+        // selalu coba path relatif apa adanya terlebih dahulu
+        $possiblePaths = [ "$basePath/$relativePath" ];
+
+        // kalau belum ada 'valid/' atau 'invalid/', tambahkan kandidat folder tersebut
+        if (!preg_match('/^(valid|invalid)\//', $relativePath)) {
+            $possiblePaths[] = "$basePath/valid/$relativePath";
+            $possiblePaths[] = "$basePath/invalid/$relativePath";
         }
 
         $realPath = null;
