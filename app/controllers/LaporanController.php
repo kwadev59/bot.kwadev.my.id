@@ -120,58 +120,59 @@ class LaporanController extends Controller {
      * Rename file
      */
     public function rename() {
-        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-            $submissionModel = $this->model('Submission_model');
-            $id = $_POST['id'];
-            $newFileName = $_POST['new_filename'];
+        if ($_SERVER['REQUEST_METHOD'] != 'POST') return;
 
-            $oldData = $submissionModel->getSubmissionById($id);
-            if (!$oldData) {
-                $_SESSION['flash'] = ['pesan' => 'Data file tidak ditemukan.', 'tipe' => 'error'];
-                header('Location: ' . BASE_URL . '/LaporanController/invalid');
-                exit;
-            }
+        $submissionModel = $this->model('Submission_model');
+        $id = $_POST['id'];
+        $newFileName = $_POST['new_filename'];
 
-            $validationResult = $this->validateNewFileName($newFileName);
-            if (!$validationResult['isValid']) {
-                $_SESSION['flash'] = ['pesan' => 'Format nama file baru tidak valid.', 'tipe' => 'error'];
-                header('Location: ' . BASE_URL . '/LaporanController/invalid');
-                exit;
-            }
-
-            $oldPath = BOT_BASE_PATH . '/' . $oldData['file_path'];
-            $newRelativePath = "storage-wa-bot/{$validationResult['type']}/valid/{$newFileName}";
-            $newFullPath = BOT_BASE_PATH . '/' . $newRelativePath;
-
-            // Pastikan folder tujuan ada
-            $newDir = dirname($newFullPath);
-            if (!is_dir($newDir)) {
-                mkdir($newDir, 0775, true);
-            }
-            
-            if (@rename($oldPath, $newFullPath)) {
-                $dataToUpdate = array_merge([
-                    'original_file_name' => $oldData['file_name'],
-                    'file_name'          => $newFileName,
-                    'file_path'          => $newRelativePath,
-                    'status'             => 'valid',
-                    'validation_notes'   => null,
-                    'file_type'          => $validationResult['type']
-                ], $validationResult['data']);
-
-                if ($submissionModel->updateSubmissionRename($id, $dataToUpdate)) {
-                    $_SESSION['flash'] = ['pesan' => 'Nama file berhasil diganti & divalidasi.', 'tipe' => 'success'];
-                } else {
-                    $_SESSION['flash'] = ['pesan' => 'Gagal memperbarui data di database.', 'tipe' => 'error'];
-                    @rename($newFullPath, $oldPath); // rollback
-                }
-            } else {
-                $_SESSION['flash'] = ['pesan' => 'Gagal mengganti nama file di server.', 'tipe' => 'error'];
-            }
-
+        $oldData = $submissionModel->getSubmissionById($id);
+        if (!$oldData) {
+            $_SESSION['flash'] = ['pesan' => 'Data file tidak ditemukan.', 'tipe' => 'error'];
             header('Location: ' . BASE_URL . '/LaporanController/invalid');
             exit;
         }
+
+        $validationResult = $this->validateNewFileName($newFileName);
+        if (!$validationResult['isValid']) {
+            $_SESSION['flash'] = ['pesan' => 'Format nama file baru tidak valid.', 'tipe' => 'error'];
+            header('Location: ' . BASE_URL . '/LaporanController/invalid');
+            exit;
+        }
+
+        // Path lama dan baru
+        $oldPath = rtrim(BOT_BASE_PATH, '/') . '/' . preg_replace('/^storage-wa-bot[\/\\\\]/', '', $oldData['file_path']);
+
+        // Pastikan struktur selalu: valid/<TIPE>/<nama_file>
+        $newRelativePath = "valid/{$validationResult['type']}/{$newFileName}";
+        $newFullPath = rtrim(BOT_BASE_PATH, '/') . '/' . $newRelativePath;
+
+        // Buat folder tujuan jika belum ada
+        $newDir = dirname($newFullPath);
+        if (!is_dir($newDir)) mkdir($newDir, 0775, true);
+
+        if (@rename($oldPath, $newFullPath)) {
+            $dataToUpdate = array_merge([
+                'original_file_name' => $oldData['file_name'],
+                'file_name'          => $newFileName,
+                'file_path'          => $newRelativePath,
+                'status'             => 'valid',
+                'validation_notes'   => null,
+                'file_type'          => $validationResult['type']
+            ], $validationResult['data']);
+
+            if ($submissionModel->updateSubmissionRename($id, $dataToUpdate)) {
+                $_SESSION['flash'] = ['pesan' => 'Nama file berhasil diganti & divalidasi.', 'tipe' => 'success'];
+            } else {
+                $_SESSION['flash'] = ['pesan' => 'Gagal memperbarui data di database.', 'tipe' => 'error'];
+                @rename($newFullPath, $oldPath); // rollback
+            }
+        } else {
+            $_SESSION['flash'] = ['pesan' => 'Gagal mengganti nama file di server.', 'tipe' => 'error'];
+        }
+
+        header('Location: ' . BASE_URL . '/LaporanController/invalid');
+        exit;
     }
 
     /**
