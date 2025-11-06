@@ -4,6 +4,8 @@
 # Environment files
 .env
 .env.*
+.hsdy
+
 
 # Logs and caches
 *.log
