@@ -70,7 +70,7 @@ $statCards = [
 
 <style>
 .monitoring-table {
-    font-size: clamp(0.86rem, 1.1vw, 0.96rem);
+    font-size: clamp(0.9rem, 1.2vw, 1.02rem);
     table-layout: fixed;
 }
 .monitoring-table th,
