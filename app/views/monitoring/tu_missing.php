@@ -52,14 +52,14 @@ $selectedDateHuman = $dateTime
     <p class="fw-semibold mb-2">
         Daftar Driver yang File Tracking Unit nya Belum dikirim (Tanggal <?= htmlspecialchars(date('d-m-Y', strtotime($selectedDate))); ?>)
     </p>
-    <ol class="list-unstyled">
+    <ol class="ps-3">
         <?php foreach ($missing as $driver): ?>
             <?php
                 $gadgetStatus = strtoupper(trim((string)($driver['gadget_status'] ?? '')));
                 $isDamaged = $gadgetStatus === 'RUSAK';
                 $gadgetNotes = trim((string)($driver['gadget_notes'] ?? ''));
             ?>
-            <li class="mb-2">
+            <li class="mb-1">
                 <?= htmlspecialchars($driver['site']); ?> /
                 <?= htmlspecialchars($driver['afdeling']); ?> —
                 <code><?= htmlspecialchars($driver['npk']); ?></code> —
