@@ -49,10 +49,9 @@ $selectedDateHuman = $dateTime
         Semua driver telah mengirim file TU untuk tanggal tersebut. 🎉
     </div>
 <?php else: ?>
-    <div class="alert alert-warning border-0 shadow-sm mb-3" role="alert">
-        <strong>Daftar Driver yang File Tracking Unit nya Belum dikirim (Tanggal <?= htmlspecialchars(date('d-m-Y', strtotime($selectedDate))); ?>)</strong>
-        <p class="mb-0 text-muted small">Mohon untuk rutin melakukan pengiriman agar monitoring berjalan lancar.</p>
-    </div>
+    <p class="fw-semibold mb-2">
+        Daftar Driver yang File Tracking Unit nya Belum dikirim (Tanggal <?= htmlspecialchars(date('d-m-Y', strtotime($selectedDate))); ?>)
+    </p>
     <ol class="list-unstyled">
         <?php foreach ($missing as $driver): ?>
             <?php
@@ -74,4 +73,5 @@ $selectedDateHuman = $dateTime
             </li>
         <?php endforeach; ?>
     </ol>
+    <p class="text-muted small mt-3">Mohon untuk rutin melakukan pengiriman agar monitoring berjalan lancar.</p>
 <?php endif; ?>
