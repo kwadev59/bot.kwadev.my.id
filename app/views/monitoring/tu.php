@@ -27,6 +27,18 @@ $selectedDateHuman = $dateTime
     ? $dateTime->format('d') . ' ' . ($monthNames[$dateTime->format('m')] ?? $dateTime->format('M')) . ' ' . $dateTime->format('Y')
     : $selectedDate;
 
+if (!function_exists('shorten_tu_filename')) {
+    function shorten_tu_filename(string $filename, int $maxLength = 48): string {
+        $filename = trim($filename);
+        if (strlen($filename) <= $maxLength) {
+            return $filename;
+        }
+        $keepStart = (int)floor($maxLength * 0.55);
+        $keepEnd = $maxLength - $keepStart - 3;
+        return substr($filename, 0, $keepStart) . '...' . substr($filename, -$keepEnd);
+    }
+}
+
 $statCards = [
     [
         'title' => 'Total Driver',
@@ -97,6 +109,10 @@ $statCards = [
 }
 .monitoring-table .file-tu-meta .file-tu-link {
     white-space: nowrap;
+    max-width: 240px;
+    display: inline-block;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 .monitoring-table .file-tu-meta .file-tu-sender {
     font-size: 0.78rem;
@@ -320,11 +336,18 @@ $statCards = [
                                         <div class="file-tu-meta">
                                             <span class="fw-semibold">
                                                 <?php if ($tuDownloadUrl): ?>
-                                                    <a href="<?= htmlspecialchars($tuDownloadUrl); ?>" class="link-primary file-tu-link">
-                                                        <?= htmlspecialchars($tuFileName); ?>
+                                                    <a
+                                                        href="<?= htmlspecialchars($tuDownloadUrl); ?>"
+                                                        class="link-primary file-tu-link"
+                                                        title="<?= htmlspecialchars($tuFileName); ?>">
+                                                        <?= htmlspecialchars(shorten_tu_filename($tuFileName)); ?>
                                                     </a>
                                                 <?php else: ?>
-                                                    <?= htmlspecialchars($tuFileName); ?>
+                                                    <span
+                                                        class="file-tu-link"
+                                                        title="<?= htmlspecialchars($tuFileName); ?>">
+                                                        <?= htmlspecialchars(shorten_tu_filename($tuFileName)); ?>
+                                                    </span>
                                                 <?php endif; ?>
                                             </span>
                                             <?php if ($tuSenderLabel): ?>
