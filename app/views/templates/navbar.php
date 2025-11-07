@@ -91,6 +91,12 @@ if ($isAdmin) {
                 'url'      => BASE_URL . '/GadgetController/pps1',
                 'isActive' => $activePage === 'Data Gadget PPS1'
             ],
+            [
+                'label'    => 'Status Gadget',
+                'icon'     => 'bi-phone-vibrate',
+                'url'      => BASE_URL . '/GadgetStatusController',
+                'isActive' => $activePage === 'Status Gadget Driver'
+            ],
             
             [
                 'label'    => 'Kontak',

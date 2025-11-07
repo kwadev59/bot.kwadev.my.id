@@ -186,6 +186,7 @@ $statCards = [
                             <th>Afdeling</th>
                             <th>NPK Driver</th>
                             <th>Nama</th>
+                            <th>Status Gadget</th>
                             <th class="text-center">Status Kirim</th>
                             <th>File TU</th>
                             <th style="width: 180px;">Dikirim Pada</th>
@@ -227,12 +228,42 @@ $statCards = [
                                     $sentAtText = $sentAt > 0 ? date('d M Y, H:i', $sentAt) : '-';
                                     $tuNotes = $hasTu ? trim((string)($tu['validation_notes'] ?? '')) : '';
                                     $employeeName = isset($employee['nama']) ? ucwords(strtolower((string)$employee['nama'])) : '-';
+                                    $gadgetStatus = $entry['gadget_status'] ?? null;
+                                    $gadgetStatusLabel = strtoupper(trim((string)($gadgetStatus['status'] ?? '')));
+                                    $gadgetNotes = trim((string)($gadgetStatus['notes'] ?? ''));
+                                    $gadgetUpdatedAt = $gadgetStatus['updated_at'] ?? null;
+                                    $gadgetUpdatedAtText = null;
+                                    if ($gadgetUpdatedAt) {
+                                        $gadgetTimestamp = strtotime((string)$gadgetUpdatedAt);
+                                        $gadgetUpdatedAtText = $gadgetTimestamp ? date('d M Y H:i', $gadgetTimestamp) : $gadgetUpdatedAt;
+                                    }
+                                    if ($gadgetStatusLabel === 'NORMAL') {
+                                        $gadgetBadgeClass = 'bg-success-subtle text-success';
+                                        $gadgetStatusText = 'Normal';
+                                    } elseif ($gadgetStatusLabel === 'RUSAK') {
+                                        $gadgetBadgeClass = 'bg-danger-subtle text-danger';
+                                        $gadgetStatusText = 'Rusak';
+                                    } else {
+                                        $gadgetBadgeClass = 'bg-secondary-subtle text-secondary';
+                                        $gadgetStatusText = 'Belum Diset';
+                                    }
                         ?>
                             <tr>
                                 <td class="text-center"><?= $rowNumber++; ?></td>
                                 <td><span class="badge bg-primary-subtle text-primary"><?= htmlspecialchars($afdeling); ?></span></td>
                                 <td><code><?= htmlspecialchars($employee['npk'] ?? '-'); ?></code></td>
                                 <td><?= htmlspecialchars($employeeName); ?></td>
+                                <td>
+                                    <span class="badge <?= htmlspecialchars($gadgetBadgeClass); ?>">
+                                        <?= htmlspecialchars($gadgetStatusText); ?>
+                                    </span>
+                                    <?php if ($gadgetNotes !== ''): ?>
+                                        <div class="small text-muted mt-1">Catatan: <?= htmlspecialchars($gadgetNotes); ?></div>
+                                    <?php endif; ?>
+                                    <?php if ($gadgetUpdatedAtText): ?>
+                                        <div class="small text-muted">Update: <?= htmlspecialchars($gadgetUpdatedAtText); ?></div>
+                                    <?php endif; ?>
+                                </td>
                                 <td class="text-center">
                                     <span class="badge <?= $statusBadgeClass; ?>"><?= $statusText; ?></span>
                                 </td>

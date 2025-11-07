@@ -15,12 +15,21 @@ class TuMonitoringController extends Controller {
 
         $employeeModel = $this->model('Employee_model');
         $targetEmployees = $this->filterTargetEmployees($employeeModel->getAll(), $siteAfdelingMap);
+        /** @var GadgetStatus_model $gadgetStatusModel */
+        $gadgetStatusModel = $this->model('GadgetStatus_model');
+        $gadgetStatuses = $gadgetStatusModel->getStatusMapByNpks(array_column($targetEmployees, 'npk_normalized'));
 
         $submissionModel = $this->model('Submission_model');
         $tuSubmissions = $submissionModel->getTuSubmissionsByFileDate($selectedDate);
         $tuIndex = $this->buildTuIndex($tuSubmissions);
 
-        [$monitoringMatrix, $summary] = $this->buildMonitoringData($targetEmployees, $siteAfdelingMap, $tuIndex, $selectedDate);
+        [$monitoringMatrix, $summary] = $this->buildMonitoringData(
+            $targetEmployees,
+            $siteAfdelingMap,
+            $tuIndex,
+            $selectedDate,
+            $gadgetStatuses
+        );
 
         $data = [
             'judul'              => 'Monitoring File TU',
@@ -123,10 +132,17 @@ class TuMonitoringController extends Controller {
      * @param array<int, array<string, mixed>> $employees
      * @param array<string, array<int, string>> $siteAfdelingMap
      * @param array<string, array<string, array<string, array<string, mixed>>>> $tuIndex
+     * @param array<string, array<string, mixed>> $gadgetStatusIndex
      * @param string $selectedDate
      * @return array{0: array<string, array<string, array<int, array<string, mixed>>>>, 1: array<string, mixed>}
      */
-    private function buildMonitoringData(array $employees, array $siteAfdelingMap, array $tuIndex, string $selectedDate): array {
+    private function buildMonitoringData(
+        array $employees,
+        array $siteAfdelingMap,
+        array $tuIndex,
+        string $selectedDate,
+        array $gadgetStatusIndex
+    ): array {
         $matrix = [];
         foreach ($siteAfdelingMap as $site => $afdelings) {
             foreach ($afdelings as $afdeling) {
@@ -148,6 +164,7 @@ class TuMonitoringController extends Controller {
             $afdeling = $employee['afd'];
             $npk = $employee['npk_normalized'];
             $tuRecord = $tuIndex[$site][$afdeling][$npk] ?? null;
+            $gadgetStatus = $gadgetStatusIndex[$npk] ?? null;
 
             $timeliness = null;
             if ($tuRecord !== null) {
@@ -172,6 +189,7 @@ class TuMonitoringController extends Controller {
                 'employee' => $employee,
                 'tu'       => $tuRecord,
                 'timeliness' => $timeliness,
+                'gadget_status' => $gadgetStatus,
             ];
         }
 
