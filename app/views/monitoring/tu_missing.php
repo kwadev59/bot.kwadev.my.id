@@ -49,36 +49,29 @@ $selectedDateHuman = $dateTime
         Semua driver telah mengirim file TU untuk tanggal tersebut. 🎉
     </div>
 <?php else: ?>
-    <div class="alert alert-warning border-0 shadow-sm mb-4" role="alert">
+    <div class="alert alert-warning border-0 shadow-sm mb-3" role="alert">
         <strong>Daftar Driver yang File Tracking Unit nya Belum dikirim (Tanggal <?= htmlspecialchars(date('d-m-Y', strtotime($selectedDate))); ?>)</strong>
         <p class="mb-0 text-muted small">Mohon untuk rutin melakukan pengiriman agar monitoring berjalan lancar.</p>
     </div>
-    <div class="card shadow-sm border-0">
-        <div class="card-header bg-white">
-            <strong>Daftar Driver</strong>
-        </div>
-        <div class="card-body">
-            <ol class="mb-0">
-                <?php foreach ($missing as $driver): ?>
-                    <?php
-                        $gadgetStatus = strtoupper(trim((string)($driver['gadget_status'] ?? '')));
-                        $isDamaged = $gadgetStatus === 'RUSAK';
-                        $gadgetNotes = trim((string)($driver['gadget_notes'] ?? ''));
-                    ?>
-                    <li class="mb-2">
-                        <?= htmlspecialchars($driver['site']); ?> /
-                        <?= htmlspecialchars($driver['afdeling']); ?> —
-                        <code><?= htmlspecialchars($driver['npk']); ?></code> —
-                        <?= htmlspecialchars($driver['nama']); ?>
-                        <?php if ($isDamaged): ?>
-                            <span class="badge bg-danger text-white ms-2">Gadget Rusak</span>
-                        <?php endif; ?>
-                        <?php if ($gadgetNotes !== ''): ?>
-                            <span class="text-muted small ms-2">(<?= htmlspecialchars($gadgetNotes); ?>)</span>
-                        <?php endif; ?>
-                    </li>
-                <?php endforeach; ?>
-            </ol>
-        </div>
-    </div>
+    <ol class="list-unstyled">
+        <?php foreach ($missing as $driver): ?>
+            <?php
+                $gadgetStatus = strtoupper(trim((string)($driver['gadget_status'] ?? '')));
+                $isDamaged = $gadgetStatus === 'RUSAK';
+                $gadgetNotes = trim((string)($driver['gadget_notes'] ?? ''));
+            ?>
+            <li class="mb-2">
+                <?= htmlspecialchars($driver['site']); ?> /
+                <?= htmlspecialchars($driver['afdeling']); ?> —
+                <code><?= htmlspecialchars($driver['npk']); ?></code> —
+                <?= htmlspecialchars($driver['nama']); ?>
+                <?php if ($isDamaged): ?>
+                    <span class="badge bg-danger text-white ms-2">Gadget Rusak</span>
+                <?php endif; ?>
+                <?php if ($gadgetNotes !== ''): ?>
+                    <span class="text-muted small ms-2">(<?= htmlspecialchars($gadgetNotes); ?>)</span>
+                <?php endif; ?>
+            </li>
+        <?php endforeach; ?>
+    </ol>
 <?php endif; ?>
