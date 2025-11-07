@@ -435,6 +435,13 @@ class TuMonitoringController extends Controller {
                     if (!empty($tu)) {
                         continue;
                     }
+                    $gadgetStatus = $row['gadget_status'] ?? null;
+                    $gadgetLabel = null;
+                    $gadgetNotes = null;
+                    if (is_array($gadgetStatus)) {
+                        $gadgetLabel = strtoupper(trim((string)($gadgetStatus['status'] ?? '')));
+                        $gadgetNotes = trim((string)($gadgetStatus['notes'] ?? ''));
+                    }
                     $list[] = [
                         'site'     => $site,
                         'afdeling' => $afdeling,
@@ -442,6 +449,8 @@ class TuMonitoringController extends Controller {
                         'nama'     => isset($employee['nama'])
                             ? ucwords(strtolower((string)$employee['nama']))
                             : '-',
+                        'gadget_status' => $gadgetLabel,
+                        'gadget_notes'  => $gadgetNotes,
                     ];
                 }
             }

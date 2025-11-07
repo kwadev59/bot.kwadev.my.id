@@ -56,11 +56,22 @@ $selectedDateHuman = $dateTime
         <div class="card-body">
             <ol class="mb-0">
                 <?php foreach ($missing as $driver): ?>
+                    <?php
+                        $gadgetStatus = strtoupper(trim((string)($driver['gadget_status'] ?? '')));
+                        $isDamaged = $gadgetStatus === 'RUSAK';
+                        $gadgetNotes = trim((string)($driver['gadget_notes'] ?? ''));
+                    ?>
                     <li class="mb-2">
                         <?= htmlspecialchars($driver['site']); ?> /
                         <?= htmlspecialchars($driver['afdeling']); ?> —
                         <code><?= htmlspecialchars($driver['npk']); ?></code> —
                         <?= htmlspecialchars($driver['nama']); ?>
+                        <?php if ($isDamaged): ?>
+                            <span class="badge bg-danger text-white ms-2">Gadget Rusak</span>
+                        <?php endif; ?>
+                        <?php if ($gadgetNotes !== ''): ?>
+                            <span class="text-muted small ms-2">(<?= htmlspecialchars($gadgetNotes); ?>)</span>
+                        <?php endif; ?>
                     </li>
                 <?php endforeach; ?>
             </ol>
