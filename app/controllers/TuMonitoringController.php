@@ -11,42 +11,44 @@ class TuMonitoringController extends Controller {
 
     public function index() {
         $selectedDate = $this->resolveSelectedDate($_GET['tanggal'] ?? $_GET['date'] ?? null);
-        $siteAfdelingMap = $this->getSiteAfdelingMap();
-
-        $employeeModel = $this->model('Employee_model');
-        $targetEmployees = $this->filterTargetEmployees($employeeModel->getAll(), $siteAfdelingMap);
-        /** @var GadgetStatus_model $gadgetStatusModel */
-        $gadgetStatusModel = $this->model('GadgetStatus_model');
-        $gadgetStatuses = $gadgetStatusModel->getStatusMapByNpks(array_column($targetEmployees, 'npk_normalized'));
-
-        $submissionModel = $this->model('Submission_model');
-        $tuSubmissions = $submissionModel->getTuSubmissionsByFileDate($selectedDate);
-        $tuIndex = $this->buildTuIndex($tuSubmissions);
-
-        [$monitoringMatrix, $summary] = $this->buildMonitoringData(
-            $targetEmployees,
-            $siteAfdelingMap,
-            $tuIndex,
-            $selectedDate,
-            $gadgetStatuses
-        );
+        $context = $this->prepareMonitoringContext($selectedDate);
 
         $data = [
             'judul'              => 'Monitoring File TU',
             'nama_user'          => $_SESSION['nama_lengkap'] ?? 'User',
             'selected_date'      => $selectedDate,
-            'monitoring'         => $monitoringMatrix,
-            'summary'            => $summary,
+            'monitoring'         => $context['monitoring'],
+            'summary'            => $context['summary'],
             'site_labels'        => [
                 'BIM1' => 'SITE BIM1 (OA, OB, OC, OD, OE, OF, OG)',
                 'PPS1' => 'SITE PPS1 (OB, OC, OD, OE, OF)',
             ],
-            'tu_available_count' => count($tuSubmissions),
+            'tu_available_count' => $context['tu_available_count'],
         ];
 
         $this->view('templates/header', $data);
         $this->view('templates/navbar', $data);
         $this->view('monitoring/tu', $data);
+        $this->view('templates/footer');
+    }
+
+    public function missing() {
+        $selectedDate = $this->resolveSelectedDate($_GET['tanggal'] ?? $_GET['date'] ?? null);
+        $context = $this->prepareMonitoringContext($selectedDate);
+        $missingDrivers = $this->extractMissingDrivers($context['monitoring']);
+
+        $data = [
+            'judul'          => 'Driver Belum Kirim TU',
+            'nama_user'      => $_SESSION['nama_lengkap'] ?? 'User',
+            'selected_date'  => $selectedDate,
+            'missing'        => $missingDrivers,
+            'total_missing'  => count($missingDrivers),
+            'summary'        => $context['summary'],
+        ];
+
+        $this->view('templates/header', $data);
+        $this->view('templates/navbar', $data);
+        $this->view('monitoring/tu_missing', $data);
         $this->view('templates/footer');
     }
 
@@ -385,5 +387,65 @@ class TuMonitoringController extends Controller {
         }
 
         return null;
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    private function prepareMonitoringContext(string $selectedDate): array {
+        $siteAfdelingMap = $this->getSiteAfdelingMap();
+
+        $employeeModel = $this->model('Employee_model');
+        $targetEmployees = $this->filterTargetEmployees($employeeModel->getAll(), $siteAfdelingMap);
+
+        /** @var GadgetStatus_model $gadgetStatusModel */
+        $gadgetStatusModel = $this->model('GadgetStatus_model');
+        $gadgetStatuses = $gadgetStatusModel->getStatusMapByNpks(array_column($targetEmployees, 'npk_normalized'));
+
+        $submissionModel = $this->model('Submission_model');
+        $tuSubmissions = $submissionModel->getTuSubmissionsByFileDate($selectedDate);
+        $tuIndex = $this->buildTuIndex($tuSubmissions);
+
+        [$monitoringMatrix, $summary] = $this->buildMonitoringData(
+            $targetEmployees,
+            $siteAfdelingMap,
+            $tuIndex,
+            $selectedDate,
+            $gadgetStatuses
+        );
+
+        return [
+            'monitoring'         => $monitoringMatrix,
+            'summary'            => $summary,
+            'tu_available_count' => count($tuSubmissions),
+        ];
+    }
+
+    /**
+     * @param array<string,array<string,array<int,array<string,mixed>>>> $monitoring
+     * @return array<int,array<string,string>>
+     */
+    private function extractMissingDrivers(array $monitoring): array {
+        $list = [];
+        foreach ($monitoring as $site => $afdelings) {
+            foreach ($afdelings as $afdeling => $rows) {
+                foreach ($rows as $row) {
+                    $employee = $row['employee'] ?? [];
+                    $tu = $row['tu'] ?? null;
+                    if (!empty($tu)) {
+                        continue;
+                    }
+                    $list[] = [
+                        'site'     => $site,
+                        'afdeling' => $afdeling,
+                        'npk'      => $employee['npk'] ?? '-',
+                        'nama'     => isset($employee['nama'])
+                            ? ucwords(strtolower((string)$employee['nama']))
+                            : '-',
+                    ];
+                }
+            }
+        }
+        return $list;
     }
 }

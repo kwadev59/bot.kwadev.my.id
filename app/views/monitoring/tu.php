@@ -137,10 +137,15 @@ $statCards = [
         <h1 class="h3 mb-1">Monitoring File TU</h1>
         <p class="text-muted mb-0">Pantau pengiriman file TU harian untuk driver SITE BIM1 dan PPS1.</p>
     </div>
-    <div class="text-lg-end">
+    <div class="text-lg-end d-flex flex-column flex-sm-row gap-2 align-items-sm-center">
         <span class="badge bg-secondary-subtle text-secondary fw-semibold px-3 py-2">
             <i class="bi bi-calendar-event me-2"></i>Tanggal: <?= htmlspecialchars($selectedDateHuman); ?>
         </span>
+        <a
+            href="<?= BASE_URL; ?>/TuMonitoringController/missing?tanggal=<?= htmlspecialchars($selectedDate); ?>"
+            class="btn btn-outline-danger btn-sm fw-semibold">
+            <i class="bi bi-exclamation-octagon me-1"></i> Cek yang belum kirim
+        </a>
     </div>
 </div>
 
