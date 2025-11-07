@@ -68,6 +68,38 @@ $statCards = [
 ];
 ?>
 
+<style>
+.monitoring-table {
+    font-size: 0.85rem;
+}
+.monitoring-table th,
+.monitoring-table td {
+    vertical-align: middle;
+    white-space: nowrap;
+}
+.monitoring-table .col-no { width: 55px; }
+.monitoring-table .col-afdeling { width: 85px; }
+.monitoring-table .col-npk { width: 140px; }
+.monitoring-table .col-name { min-width: 180px; white-space: normal; }
+.monitoring-table .col-gadget { min-width: 170px; }
+.monitoring-table .col-status { width: 130px; }
+.monitoring-table .col-file { min-width: 200px; white-space: normal; }
+.monitoring-table .col-sent { width: 160px; }
+.monitoring-table .col-notes { min-width: 170px; white-space: normal; }
+.monitoring-table .badge {
+    font-size: 0.75rem;
+    padding: 0.35rem 0.6rem;
+}
+@media (max-width: 1400px) {
+    .monitoring-table {
+        font-size: 0.8rem;
+    }
+    .monitoring-table .col-name {
+        min-width: 150px;
+    }
+}
+</style>
+
 <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between mb-4 gap-3">
     <div>
         <h1 class="h3 mb-1">Monitoring File TU</h1>
@@ -179,18 +211,18 @@ $statCards = [
                 <?php endif; ?>
             </div>
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
+                <table class="table table-hover table-sm align-middle mb-0 monitoring-table">
                     <thead class="table-light">
                         <tr>
-                            <th style="width: 60px;" class="text-center">No</th>
-                            <th>Afdeling</th>
-                            <th>NPK Driver</th>
-                            <th>Nama</th>
-                            <th>Status Gadget</th>
-                            <th class="text-center">Status Kirim</th>
-                            <th>File TU</th>
-                            <th style="width: 180px;">Dikirim Pada</th>
-                            <th style="width: 160px;">Catatan</th>
+                            <th class="text-center col-no">No</th>
+                            <th class="col-afdeling">Afdeling</th>
+                            <th class="col-npk">NPK Driver</th>
+                            <th class="col-name">Nama</th>
+                            <th class="col-gadget">Status Gadget</th>
+                            <th class="text-center col-status">Status Kirim</th>
+                            <th class="col-file">File TU</th>
+                            <th class="col-sent">Dikirim Pada</th>
+                            <th class="col-notes">Catatan</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -249,11 +281,11 @@ $statCards = [
                                     }
                         ?>
                             <tr>
-                                <td class="text-center"><?= $rowNumber++; ?></td>
-                                <td><span class="badge bg-primary-subtle text-primary"><?= htmlspecialchars($afdeling); ?></span></td>
-                                <td><code><?= htmlspecialchars($employee['npk'] ?? '-'); ?></code></td>
-                                <td><?= htmlspecialchars($employeeName); ?></td>
-                                <td>
+                                <td class="text-center col-no"><?= $rowNumber++; ?></td>
+                                <td class="col-afdeling"><span class="badge bg-primary-subtle text-primary"><?= htmlspecialchars($afdeling); ?></span></td>
+                                <td class="col-npk"><code><?= htmlspecialchars($employee['npk'] ?? '-'); ?></code></td>
+                                <td class="col-name"><?= htmlspecialchars($employeeName); ?></td>
+                                <td class="col-gadget">
                                     <span class="badge <?= htmlspecialchars($gadgetBadgeClass); ?>">
                                         <?= htmlspecialchars($gadgetStatusText); ?>
                                     </span>
@@ -264,10 +296,10 @@ $statCards = [
                                         <div class="small text-muted">Update: <?= htmlspecialchars($gadgetUpdatedAtText); ?></div>
                                     <?php endif; ?>
                                 </td>
-                                <td class="text-center">
+                                <td class="text-center col-status">
                                     <span class="badge <?= $statusBadgeClass; ?>"><?= $statusText; ?></span>
                                 </td>
-                                <td>
+                                <td class="col-file">
                                     <?php if ($hasTu && $tuFileName): ?>
                                         <div class="fw-semibold">
                                             <?php if ($tuDownloadUrl): ?>
@@ -285,8 +317,8 @@ $statCards = [
                                         <span class="text-muted">-</span>
                                     <?php endif; ?>
                                 </td>
-                                <td><?= htmlspecialchars($sentAtText); ?></td>
-                                <td>
+                                <td class="col-sent"><?= htmlspecialchars($sentAtText); ?></td>
+                                <td class="col-notes">
                                     <?php if ($hasTu): ?>
                                         <?php if (!empty($timeliness)): ?>
                                             <span class="badge <?= htmlspecialchars($timeliness['badge_class']); ?>">
