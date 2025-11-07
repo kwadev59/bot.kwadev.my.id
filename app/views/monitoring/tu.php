@@ -77,8 +77,8 @@ $statCards = [
 .monitoring-table td {
     vertical-align: middle;
     white-space: nowrap;
-    padding-top: 0.55rem;
-    padding-bottom: 0.55rem;
+    padding-top: 0.4rem;
+    padding-bottom: 0.4rem;
 }
 .monitoring-table .col-no { width: 55px; }
 .monitoring-table .col-afdeling { width: 90px; }
@@ -92,7 +92,7 @@ $statCards = [
 .monitoring-table .file-tu-meta {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.4rem;
+    gap: 0.25rem;
     align-items: center;
 }
 .monitoring-table .file-tu-meta .file-tu-link {
