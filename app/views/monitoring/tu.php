@@ -70,32 +70,35 @@ $statCards = [
 
 <style>
 .monitoring-table {
-    font-size: 0.85rem;
+    font-size: clamp(0.86rem, 1.1vw, 0.96rem);
+    table-layout: fixed;
 }
 .monitoring-table th,
 .monitoring-table td {
     vertical-align: middle;
     white-space: nowrap;
+    padding-top: 0.55rem;
+    padding-bottom: 0.55rem;
 }
 .monitoring-table .col-no { width: 55px; }
-.monitoring-table .col-afdeling { width: 85px; }
-.monitoring-table .col-npk { width: 140px; }
-.monitoring-table .col-name { min-width: 180px; white-space: normal; }
-.monitoring-table .col-gadget { min-width: 170px; }
-.monitoring-table .col-status { width: 130px; }
-.monitoring-table .col-file { min-width: 200px; white-space: normal; }
-.monitoring-table .col-sent { width: 160px; }
-.monitoring-table .col-notes { min-width: 170px; white-space: normal; }
+.monitoring-table .col-afdeling { width: 90px; }
+.monitoring-table .col-npk { width: 150px; }
+.monitoring-table .col-name { min-width: 200px; white-space: normal; }
+.monitoring-table .col-gadget { min-width: 190px; white-space: normal; }
+.monitoring-table .col-status { width: 140px; }
+.monitoring-table .col-file { min-width: 220px; white-space: normal; word-break: break-word; }
+.monitoring-table .col-sent { width: 165px; }
+.monitoring-table .col-notes { min-width: 180px; white-space: normal; }
 .monitoring-table .badge {
-    font-size: 0.75rem;
-    padding: 0.35rem 0.6rem;
+    font-size: 0.78rem;
+    padding: 0.35rem 0.65rem;
 }
 @media (max-width: 1400px) {
     .monitoring-table {
-        font-size: 0.8rem;
+        font-size: 0.85rem;
     }
     .monitoring-table .col-name {
-        min-width: 150px;
+        min-width: 170px;
     }
 }
 </style>
