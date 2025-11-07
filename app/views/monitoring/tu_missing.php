@@ -49,6 +49,10 @@ $selectedDateHuman = $dateTime
         Semua driver telah mengirim file TU untuk tanggal tersebut. 🎉
     </div>
 <?php else: ?>
+    <div class="alert alert-warning border-0 shadow-sm mb-4" role="alert">
+        <strong>Daftar Driver yang File Tracking Unit nya Belum dikirim (Tanggal <?= htmlspecialchars(date('d-m-Y', strtotime($selectedDate))); ?>)</strong>
+        <p class="mb-0 text-muted small">Mohon untuk rutin melakukan pengiriman agar monitoring berjalan lancar.</p>
+    </div>
     <div class="card shadow-sm border-0">
         <div class="card-header bg-white">
             <strong>Daftar Driver</strong>

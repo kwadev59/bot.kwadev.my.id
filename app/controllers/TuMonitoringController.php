@@ -496,6 +496,11 @@ class TuMonitoringController extends Controller {
                         $gadgetLabel = strtoupper(trim((string)($gadgetStatus['status'] ?? '')));
                         $gadgetNotes = trim((string)($gadgetStatus['notes'] ?? ''));
                     }
+                    $normalizedLabel = strtoupper(trim((string)$gadgetLabel));
+                    if ($normalizedLabel === 'RUSAK') {
+                        continue;
+                    }
+
                     $list[] = [
                         'site'     => $site,
                         'afdeling' => $afdeling,
