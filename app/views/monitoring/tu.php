@@ -306,12 +306,14 @@ $statCards = [
                                         $gadgetTimestamp = strtotime((string)$gadgetUpdatedAt);
                                         $gadgetUpdatedAtText = $gadgetTimestamp ? date('d M Y H:i', $gadgetTimestamp) : $gadgetUpdatedAt;
                                     }
+                                    $isGadgetDamaged = false;
                                     if ($gadgetStatusLabel === 'NORMAL') {
                                         $gadgetBadgeClass = 'bg-success-subtle text-success';
                                         $gadgetStatusText = 'Normal';
                                     } elseif ($gadgetStatusLabel === 'RUSAK') {
                                         $gadgetBadgeClass = 'bg-danger-subtle text-danger';
                                         $gadgetStatusText = 'Rusak';
+                                        $isGadgetDamaged = true;
                                     } else {
                                         $gadgetBadgeClass = 'bg-secondary-subtle text-secondary';
                                         $gadgetStatusText = 'Belum Diset';
@@ -326,6 +328,11 @@ $statCards = [
                                     <span class="badge <?= htmlspecialchars($gadgetBadgeClass); ?>">
                                         <?= htmlspecialchars($gadgetStatusText); ?>
                                     </span>
+                                    <?php if ($isGadgetDamaged): ?>
+                                        <div class="mt-1">
+                                            <span class="badge bg-danger text-white">Gadget Rusak</span>
+                                        </div>
+                                    <?php endif; ?>
                                     <?php if ($gadgetNotes !== ''): ?>
                                         <div class="small text-muted mt-1">Catatan: <?= htmlspecialchars($gadgetNotes); ?></div>
                                     <?php endif; ?>
