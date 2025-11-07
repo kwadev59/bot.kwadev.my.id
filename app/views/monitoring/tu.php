@@ -89,6 +89,19 @@ $statCards = [
 .monitoring-table .col-file { min-width: 220px; white-space: normal; word-break: break-word; }
 .monitoring-table .col-sent { width: 165px; }
 .monitoring-table .col-notes { min-width: 180px; white-space: normal; }
+.monitoring-table .file-tu-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    align-items: center;
+}
+.monitoring-table .file-tu-meta .file-tu-link {
+    white-space: nowrap;
+}
+.monitoring-table .file-tu-meta .file-tu-sender {
+    font-size: 0.78rem;
+    color: #6c757d;
+}
 .monitoring-table .badge {
     font-size: 0.78rem;
     padding: 0.35rem 0.65rem;
@@ -304,18 +317,22 @@ $statCards = [
                                 </td>
                                 <td class="col-file">
                                     <?php if ($hasTu && $tuFileName): ?>
-                                        <div class="fw-semibold">
-                                            <?php if ($tuDownloadUrl): ?>
-                                                <a href="<?= htmlspecialchars($tuDownloadUrl); ?>" class="link-primary">
+                                        <div class="file-tu-meta">
+                                            <span class="fw-semibold">
+                                                <?php if ($tuDownloadUrl): ?>
+                                                    <a href="<?= htmlspecialchars($tuDownloadUrl); ?>" class="link-primary file-tu-link">
+                                                        <?= htmlspecialchars($tuFileName); ?>
+                                                    </a>
+                                                <?php else: ?>
                                                     <?= htmlspecialchars($tuFileName); ?>
-                                                </a>
-                                            <?php else: ?>
-                                                <?= htmlspecialchars($tuFileName); ?>
+                                                <?php endif; ?>
+                                            </span>
+                                            <?php if ($tuSenderLabel): ?>
+                                                <span class="file-tu-sender">
+                                                    <?= htmlspecialchars($tuSenderLabel); ?>
+                                                </span>
                                             <?php endif; ?>
                                         </div>
-                                        <?php if ($tuSenderLabel): ?>
-                                            <div class="small text-muted"><?= htmlspecialchars($tuSenderLabel); ?></div>
-                                        <?php endif; ?>
                                     <?php else: ?>
                                         <span class="text-muted">-</span>
                                     <?php endif; ?>
