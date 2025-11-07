@@ -52,6 +52,60 @@ class TuMonitoringController extends Controller {
         $this->view('templates/footer');
     }
 
+    public function exportCsv() {
+        $selectedDate = $this->resolveSelectedDate($_GET['tanggal'] ?? $_GET['date'] ?? null);
+        $context = $this->prepareMonitoringContext($selectedDate);
+        $rows = $this->flattenMonitoringRows($context['monitoring']);
+
+        $fileName = 'monitoring-tu-' . $selectedDate . '.csv';
+        header('Content-Type: text/csv; charset=UTF-8');
+        header('Content-Disposition: attachment; filename="' . $fileName . '"');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+
+        $output = fopen('php://output', 'w');
+        if ($output === false) {
+            exit;
+        }
+        fprintf($output, chr(0xEF) . chr(0xBB) . chr(0xBF));
+
+        $headers = [
+            'Site',
+            'Afdeling',
+            'NPK Driver',
+            'Nama',
+            'Status Gadget',
+            'Catatan Gadget',
+            'Status Kirim',
+            'Nama File',
+            'Pengirim',
+            'Dikirim Pada',
+            'Ketepatan',
+            'Catatan Validasi',
+        ];
+        fputcsv($output, $headers);
+
+        foreach ($rows as $row) {
+            fputcsv($output, [
+                $row['site'],
+                $row['afdeling'],
+                $row['npk'],
+                $row['nama'],
+                $row['gadget_status'],
+                $row['gadget_notes'],
+                $row['status_kirim'],
+                $row['file_name'],
+                $row['pengirim'],
+                $row['dikirim_pada'],
+                $row['ketepatan'],
+                $row['catatan'],
+            ]);
+        }
+
+        fclose($output);
+        exit;
+    }
+
     /**
      * @param array<int, array<string, mixed>> $employees
      * @param array<string, array<int, string>> $siteAfdelingMap
@@ -456,5 +510,85 @@ class TuMonitoringController extends Controller {
             }
         }
         return $list;
+    }
+
+    /**
+     * @param array<string,array<string,array<int,array<string,mixed>>>> $monitoring
+     * @return array<int,array<string,string>>
+     */
+    private function flattenMonitoringRows(array $monitoring): array {
+        $rows = [];
+        foreach ($monitoring as $site => $afdelings) {
+            foreach ($afdelings as $afdeling => $entries) {
+                foreach ($entries as $entry) {
+                    $employee = $entry['employee'] ?? [];
+                    $tu = $entry['tu'] ?? null;
+                    $timeliness = $entry['timeliness'] ?? null;
+                    $gadgetStatus = $entry['gadget_status'] ?? null;
+
+                    $npk = $employee['npk'] ?? $employee['npk_normalized'] ?? '-';
+                    $nama = isset($employee['nama'])
+                        ? ucwords(strtolower((string)$employee['nama']))
+                        : '-';
+
+                    $gadgetLabel = '';
+                    $gadgetNotes = '';
+                    if (is_array($gadgetStatus)) {
+                        $gadgetLabel = strtoupper(trim((string)($gadgetStatus['status'] ?? '')));
+                        $gadgetNotes = trim((string)($gadgetStatus['notes'] ?? ''));
+                    }
+                    if ($gadgetLabel === '') {
+                        $gadgetLabel = 'BELUM DISET';
+                    }
+
+                    $statusKirim = empty($tu) ? 'BELUM KIRIM' : 'SUDAH KIRIM';
+                    $fileName = $tu['file_name'] ?? '';
+                    $senderLabel = '';
+                    if (!empty($tu)) {
+                        $senderName = trim((string)($tu['nama_lengkap'] ?? ''));
+                        $senderNumber = trim((string)($tu['sender_number'] ?? ''));
+                        if ($senderName !== '' && $senderNumber !== '') {
+                            $senderLabel = $senderName . ' (' . $senderNumber . ')';
+                        } elseif ($senderName !== '') {
+                            $senderLabel = $senderName;
+                        } elseif ($senderNumber !== '') {
+                            $senderLabel = $senderNumber;
+                        }
+                    }
+
+                    $sentAt = '';
+                    if (!empty($tu)) {
+                        $sentTimestamp = $tu['submission_timestamp'] ?? null;
+                        if (!is_int($sentTimestamp) || $sentTimestamp <= 0) {
+                            $sentTimestamp = strtotime((string)($tu['submission_date'] ?? ''));
+                        }
+                        if (is_int($sentTimestamp) && $sentTimestamp > 0) {
+                            $sentAt = date('Y-m-d H:i', $sentTimestamp);
+                        }
+                    }
+
+                    $ketepatan = '';
+                    if (is_array($timeliness) && !empty($timeliness['label'])) {
+                        $ketepatan = $timeliness['label'];
+                    }
+
+                    $rows[] = [
+                        'site'          => $site,
+                        'afdeling'      => $afdeling,
+                        'npk'           => $npk,
+                        'nama'          => $nama,
+                        'gadget_status' => $gadgetLabel,
+                        'gadget_notes'  => $gadgetNotes,
+                        'status_kirim'  => $statusKirim,
+                        'file_name'     => $fileName,
+                        'pengirim'      => $senderLabel,
+                        'dikirim_pada'  => $sentAt,
+                        'ketepatan'     => $ketepatan,
+                        'catatan'       => trim((string)($tu['validation_notes'] ?? '')),
+                    ];
+                }
+            }
+        }
+        return $rows;
     }
 }
