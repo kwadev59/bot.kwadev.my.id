@@ -92,15 +92,15 @@ $statCards = [
     padding-top: 0.4rem;
     padding-bottom: 0.4rem;
 }
-.monitoring-table .col-no { width: 55px; }
-.monitoring-table .col-afdeling { width: 90px; }
-.monitoring-table .col-npk { width: 150px; }
-.monitoring-table .col-name { min-width: 200px; white-space: normal; }
-.monitoring-table .col-gadget { min-width: 190px; white-space: normal; }
-.monitoring-table .col-status { width: 140px; }
-.monitoring-table .col-file { min-width: 220px; white-space: normal; word-break: break-word; }
-.monitoring-table .col-sent { width: 165px; }
-.monitoring-table .col-notes { min-width: 180px; white-space: normal; }
+.monitoring-table .col-no { width: 50px; }
+.monitoring-table .col-afdeling { width: 75px; }
+.monitoring-table .col-npk { width: 135px; }
+.monitoring-table .col-name { min-width: 180px; white-space: normal; }
+.monitoring-table .col-gadget { min-width: 160px; white-space: normal; }
+.monitoring-table .col-status { width: 125px; }
+.monitoring-table .col-file { min-width: 200px; white-space: normal; word-break: break-word; }
+.monitoring-table .col-sent { width: 150px; }
+.monitoring-table .col-notes { min-width: 165px; white-space: normal; }
 .monitoring-table .file-tu-meta {
     display: flex;
     flex-wrap: wrap;
@@ -109,7 +109,7 @@ $statCards = [
 }
 .monitoring-table .file-tu-meta .file-tu-link {
     white-space: nowrap;
-    max-width: 240px;
+    max-width: 210px;
     display: inline-block;
     overflow: hidden;
     text-overflow: ellipsis;
