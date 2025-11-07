@@ -1,3 +1,5 @@
+<?php $isValidPage = ($data['status_laporan'] ?? '') === 'valid'; ?>
+
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center mb-4">
     <h1 class="h3 mb-0 page-title">Laporan <?= ucfirst($data['status_laporan']); ?></h1>
     <div class="btn-group">
@@ -48,6 +50,9 @@
                             Tanggal File <i class="bi bi-arrow-<?= ($data['sort']['by'] === 'tanggal') ? (($data['sort']['dir'] === 'ASC') ? 'up' : 'down') : 'up'; ?>"></i>
                         </a>
                     </th>
+                    <?php if ($isValidPage): ?>
+                    <th class="py-2">Ketepatan Kirim</th>
+                    <?php endif; ?>
                     <th class="py-2">
                         <a href="?sort=file_name&dir=<?= ($data['sort']['by'] === 'file_name' && $data['sort']['dir'] === 'ASC') ? 'DESC' : 'ASC'; ?>&search=<?= urlencode($data['filters']['search'] ?? ''); ?>" class="text-decoration-none">
                             Nama File <i class="bi bi-arrow-<?= ($data['sort']['by'] === 'file_name') ? (($data['sort']['dir'] === 'ASC') ? 'up' : 'down') : 'up'; ?>"></i>
@@ -62,13 +67,27 @@
             <tbody>
                 <?php if (empty($data['laporan'])): ?>
                     <tr>
-                        <td colspan="7" class="text-center py-3 text-muted">Tidak ada data laporan <?= $data['status_laporan']; ?>.</td>
+                        <td colspan="<?= $isValidPage ? 8 : 7; ?>" class="text-center py-3 text-muted">Tidak ada data laporan <?= $data['status_laporan']; ?>.</td>
                     </tr>
                 <?php else: ?>
                     <?php foreach ($data['laporan'] as $laporan): ?>
                         <tr>
                             <td class="align-middle py-2"><?= date('d M Y, H:i', strtotime($laporan['submission_date'])); ?></td>
                             <td class="align-middle py-2"><?= formatFileDate($laporan['tanggal'] ?? null); ?></td>
+                            <?php if ($isValidPage): ?>
+                            <td class="align-middle py-2">
+                                <?php if (!empty($laporan['timeliness'])): ?>
+                                    <span class="badge <?= htmlspecialchars($laporan['timeliness']['badge_class']); ?>">
+                                        <?php if (!empty($laporan['timeliness']['icon'])): ?>
+                                            <i class="bi <?= htmlspecialchars($laporan['timeliness']['icon']); ?> me-1"></i>
+                                        <?php endif; ?>
+                                        <?= htmlspecialchars($laporan['timeliness']['label']); ?>
+                                    </span>
+                                <?php else: ?>
+                                    <span class="badge bg-secondary-subtle text-secondary">Tanggal tidak diketahui</span>
+                                <?php endif; ?>
+                            </td>
+                            <?php endif; ?>
                             <td class="align-middle py-2">
                                 <div class="d-flex align-items-center">
                                     <i class="bi bi-file-<?= strtolower(pathinfo($laporan['file_name'], PATHINFO_EXTENSION)) === 'zip' ? 'zip' : 'text'; ?> me-2 text-muted"></i>
