@@ -69,8 +69,16 @@ class LaporanController extends Controller {
         $data['status_laporan'] = $status;
         $data['laporan'] = $submissionModel->searchSubmissions($status, $awal_data, $data_per_halaman, $options);
         if ($status === 'valid') {
-            $data['laporan'] = array_map(function(array $row) {
+            $downloadCounts = [];
+            if (!empty($data['laporan'])) {
+                $filenames = array_column($data['laporan'], 'file_name');
+                $counterModel = $this->model('DownloadCounter_model');
+                $downloadCounts = $counterModel->getDownloadCounts($filenames);
+            }
+
+            $data['laporan'] = array_map(function(array $row) use ($downloadCounts) {
                 $row['timeliness'] = $this->calculateTimelinessForSubmission($row);
+                $row['download_count'] = $downloadCounts[$row['file_name']] ?? 0;
                 return $row;
             }, $data['laporan']);
         }

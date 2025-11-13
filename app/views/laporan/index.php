@@ -52,6 +52,7 @@
                     </th>
                     <?php if ($isValidPage): ?>
                     <th class="py-2">Ketepatan Kirim</th>
+                    <th class="py-2 text-center">Jml Unduh</th>
                     <?php endif; ?>
                     <th class="py-2">
                         <a href="?sort=file_name&dir=<?= ($data['sort']['by'] === 'file_name' && $data['sort']['dir'] === 'ASC') ? 'DESC' : 'ASC'; ?>&search=<?= urlencode($data['filters']['search'] ?? ''); ?>" class="text-decoration-none">
@@ -67,7 +68,7 @@
             <tbody>
                 <?php if (empty($data['laporan'])): ?>
                     <tr>
-                        <td colspan="<?= $isValidPage ? 8 : 7; ?>" class="text-center py-3 text-muted">Tidak ada data laporan <?= $data['status_laporan']; ?>.</td>
+                        <td colspan="<?= $isValidPage ? 9 : 7; ?>" class="text-center py-3 text-muted">Tidak ada data laporan <?= $data['status_laporan']; ?>.</td>
                     </tr>
                 <?php else: ?>
                     <?php foreach ($data['laporan'] as $laporan): ?>
@@ -87,6 +88,7 @@
                                     <span class="badge bg-secondary-subtle text-secondary">Tanggal tidak diketahui</span>
                                 <?php endif; ?>
                             </td>
+                            <td class="align-middle text-center py-2"><?= $laporan['download_count'] ?? 0; ?></td>
                             <?php endif; ?>
                             <td class="align-middle py-2">
                                 <div class="d-flex align-items-center">
