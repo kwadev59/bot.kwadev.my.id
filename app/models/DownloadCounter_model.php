@@ -70,4 +70,40 @@ class DownloadCounter_model {
         $this->db->query("SELECT * FROM {$this->table} ORDER BY download_count DESC");
         return $this->db->resultSet();
     }
+
+    /**
+     * Mendapatkan jumlah unduhan untuk beberapa file.
+     * @param array $filenames Array nama file.
+     * @return array Array asosiatif [filename => download_count].
+     */
+    public function getDownloadCounts(array $filenames) {
+        if (empty($filenames)) {
+            return [];
+        }
+
+        $placeholders = [];
+        $params = [];
+        foreach ($filenames as $index => $filename) {
+            $key = ":filename{$index}";
+            $placeholders[] = $key;
+            $params[$key] = $filename;
+        }
+
+        $placeholderString = implode(',', $placeholders);
+        $this->db->query("SELECT filename, download_count FROM {$this->table} WHERE filename IN ({$placeholderString})");
+
+        foreach ($params as $key => $value) {
+            $this->db->bind($key, $value);
+        }
+
+        $results = $this->db->resultSet();
+        $counts = array_column($results, 'download_count', 'filename');
+
+        $finalCounts = array_fill_keys($filenames, 0);
+        foreach ($counts as $filename => $count) {
+            $finalCounts[$filename] = (int)$count;
+        }
+
+        return $finalCounts;
+    }
 }
