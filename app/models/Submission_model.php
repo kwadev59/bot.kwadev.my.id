@@ -1,21 +1,40 @@
 <?php
+/**
+ * Class Submission_model
+ *
+ * Model untuk mengelola data pengiriman file (file_submissions).
+ * Menyediakan metode untuk mengambil, menghitung, dan memanipulasi data laporan.
+ */
 class Submission_model {
+    /** @var Database Instance dari kelas Database. */
     private $db;
+    /** @var string Nama tabel di database. */
     private $table = 'file_submissions';
+    /** @var array|null Skema tabel kontak untuk join dinamis. */
     private $kontakSchema = null;
 
+    /**
+     * Submission_model constructor.
+     */
     public function __construct() {
         $this->db = new Database;
     }
 
-    /** Hitung semua file */
+    /**
+     * Menghitung total semua file yang tersimpan.
+     * @return int Total file.
+     */
     public function getTotalFiles() {
         $this->db->query("SELECT COUNT(id) AS total FROM {$this->table}");
         $row = $this->db->single();
         return $row ? (int)$row['total'] : 0;
     }
 
-    /** Hitung file per tipe */
+    /**
+     * Menghitung jumlah file berdasarkan tipe.
+     * @param string $type Tipe file (misal: 'TRB', 'TU').
+     * @return int Jumlah file.
+     */
     public function getCountByType($type) {
         $this->db->query("SELECT COUNT(id) AS total FROM {$this->table} WHERE file_type = :type");
         $this->db->bind('type', $type);
@@ -23,7 +42,12 @@ class Submission_model {
         return $row ? (int)$row['total'] : 0;
     }
 
-    /** Hitung file per tipe dan status */
+    /**
+     * Menghitung jumlah file berdasarkan tipe dan status.
+     * @param string $type Tipe file.
+     * @param string $status Status file ('valid' atau 'invalid').
+     * @return int Jumlah file.
+     */
     public function getCountByTypeAndStatus($type, $status) {
         $this->db->query("SELECT COUNT(id) AS total FROM {$this->table} WHERE file_type = :type AND status = :status");
         $this->db->bind('type', $type);
@@ -32,7 +56,11 @@ class Submission_model {
         return $row ? (int)$row['total'] : 0;
     }
 
-    /** Ambil beberapa file terbaru untuk dashboard */
+    /**
+     * Mengambil beberapa file terbaru untuk ditampilkan di dashboard.
+     * @param int $limit Jumlah file yang akan diambil.
+     * @return array Daftar file terbaru.
+     */
     public function getRecentSubmissions($limit = 10) {
         $joinClause = $this->getKontakJoinClause();
         $kontakNamaExpr = $this->getKontakNamaExpression('fs.sender_number');
@@ -49,9 +77,9 @@ class Submission_model {
     }
 
     /**
-     * Ambil daftar file TU berdasarkan tanggal file (bukan tanggal kirim).
-     *
-     * @param string $fileDate format Y-m-d
+     * Mengambil daftar file TU berdasarkan tanggal yang diekstrak dari nama file.
+     * @param string $fileDate Tanggal dalam format Y-m-d.
+     * @return array Daftar file TU.
      */
     public function getTuSubmissionsByFileDate($fileDate) {
         $joinClause = $this->getKontakJoinClause();
@@ -59,30 +87,14 @@ class Submission_model {
         $parsedDateExpr = "COALESCE(
             NULLIF(STR_TO_DATE(fs.tanggal, '%Y%m%d'), '0000-00-00'),
             STR_TO_DATE(fs.tanggal, '%Y-%m-%d'),
-            STR_TO_DATE(fs.tanggal, '%Y-%m-%d %H:%i:%s'),
-            STR_TO_DATE(fs.tanggal, '%d-%m-%Y'),
-            STR_TO_DATE(fs.tanggal, '%d-%m-%Y %H:%i:%s'),
-            STR_TO_DATE(fs.tanggal, '%d/%m/%Y'),
-            STR_TO_DATE(fs.tanggal, '%d/%m/%Y %H:%i:%s'),
-            STR_TO_DATE(fs.tanggal, '%Y/%m/%d'),
-            STR_TO_DATE(fs.tanggal, '%Y/%m/%d %H:%i:%s'),
-            STR_TO_DATE(SUBSTRING_INDEX(fs.tanggal, ' ', 1), '%Y-%m-%d'),
-            STR_TO_DATE(SUBSTRING_INDEX(fs.tanggal, ' ', 1), '%d-%m-%Y'),
-            STR_TO_DATE(SUBSTRING_INDEX(fs.tanggal, ' ', 1), '%d/%m/%Y'),
-            STR_TO_DATE(SUBSTRING_INDEX(fs.tanggal, ' ', 1), '%Y/%m/%d'),
             STR_TO_DATE(SUBSTRING_INDEX(SUBSTRING_INDEX(fs.file_name, '-', 5), '-', -1), '%Y%m%d')
         )";
         $parsedDateExprDateOnly = "DATE({$parsedDateExpr})";
 
-        $query = "SELECT
-                    fs.*,
-                    {$kontakNamaExpr} AS nama_lengkap,
-                    {$parsedDateExprDateOnly} AS tanggal_file_date
+        $query = "SELECT fs.*, {$kontakNamaExpr} AS nama_lengkap, {$parsedDateExprDateOnly} AS tanggal_file_date
                   FROM {$this->table} fs
                   {$joinClause}
-                  WHERE fs.file_type = 'TU'
-                    AND {$parsedDateExpr} IS NOT NULL
-                    AND {$parsedDateExprDateOnly} = :file_date
+                  WHERE fs.file_type = 'TU' AND {$parsedDateExpr} IS NOT NULL AND {$parsedDateExprDateOnly} = :file_date
                   ORDER BY fs.submission_date DESC";
 
         $this->db->query($query);
@@ -90,204 +102,146 @@ class Submission_model {
         return $this->db->resultSet();
     }
 
-    /** Hitung total data untuk pagination + filter */
+    /**
+     * Menghitung total data untuk paginasi dengan filter.
+     * @param string $status Status file.
+     * @param array $filters Opsi filter.
+     * @return int Total data.
+     */
     public function countFilteredSubmissions($status, $filters = []) {
         $joinClause = $this->getKontakJoinClause();
-
-        $query = "SELECT COUNT(fs.id) AS total
-                  FROM {$this->table} fs
-                  {$joinClause}
-                  WHERE fs.status = :status";
+        $query = "SELECT COUNT(fs.id) AS total FROM {$this->table} fs {$joinClause} WHERE fs.status = :status";
         $params = [':status' => $status];
 
-        if (!empty($filters['search']) && trim($filters['search']) !== '') {
-            $search = trim(html_entity_decode(urldecode($filters['search'])));
-            $search = preg_replace('/[\x00-\x1F\x7F]/u', '', $search);
-            $params[':search'] = '%' . $search . '%';
+        if (!empty($filters['search'])) {
+            $params[':search'] = '%' . trim($filters['search']) . '%';
             $query .= " AND fs.file_name LIKE :search";
         }
 
         $this->db->query($query);
-        foreach ($params as $key => $value) {
-            $this->db->bind(ltrim($key, ':'), $value);
-        }
+        foreach ($params as $key => $value) $this->db->bind(ltrim($key, ':'), $value);
 
         $row = $this->db->single();
         return $row ? (int)$row['total'] : 0;
     }
 
-    /** Ambil data dengan pagination, filter, sort */
+    /**
+     * Mengambil data dengan paginasi, filter, dan sorting.
+     * @param string $status Status file.
+     * @param int $start Posisi awal data.
+     * @param int $limit Jumlah data per halaman.
+     * @param array $options Opsi filter dan sorting.
+     * @return array Daftar data.
+     */
     public function searchSubmissions($status, $start, $limit, $options = []) {
-        // Normalisasi angka (wajib untuk LIMIT/OFFSET)
-        $start = max(0, (int)$start);
-        $limit = max(1, (int)$limit);
-
         $joinClause = $this->getKontakJoinClause();
         $kontakNamaExpr = $this->getKontakNamaExpression('fs.sender_number');
 
-        $query = "SELECT
-                    fs.*,
-                    {$kontakNamaExpr} AS nama_lengkap
-                  FROM {$this->table} fs
-                  {$joinClause}
-                  WHERE fs.status = :status";
-
+        $query = "SELECT fs.*, {$kontakNamaExpr} AS nama_lengkap FROM {$this->table} fs {$joinClause} WHERE fs.status = :status";
         $params = [':status' => $status];
 
-        // Filter: search by file_name
-        if (!empty($options['search']) && trim($options['search']) !== '') {
-            $search = trim(html_entity_decode(urldecode($options['search'])));
-            $search = preg_replace('/[\x00-\x1F\x7F]/u', '', $search);
-            $params[':search'] = '%' . $search . '%';
+        if (!empty($options['search'])) {
+            $params[':search'] = '%' . trim($options['search']) . '%';
             $query .= " AND fs.file_name LIKE :search";
         }
 
-        // Sorting
         $kolom_valid = ['submission_date', 'tanggal', 'file_name', 'file_type', 'file_size', 'nama_lengkap'];
-        $sort_by  = $options['sort'] ?? 'submission_date';
-        $sort_dir = strtoupper($options['dir'] ?? 'DESC');
-        if (!in_array($sort_dir, ['ASC', 'DESC'])) $sort_dir = 'DESC';
+        $sort_by = in_array($options['sort'] ?? '', $kolom_valid) ? $options['sort'] : 'submission_date';
+        $sort_dir = in_array(strtoupper($options['dir'] ?? ''), ['ASC', 'DESC']) ? strtoupper($options['dir']) : 'DESC';
+        $sort_column = $sort_by === 'nama_lengkap' ? "({$kontakNamaExpr})" : "fs.{$sort_by}";
 
-        if (in_array($sort_by, $kolom_valid)) {
-            if ($sort_by === 'nama_lengkap') {
-                $sort_column = "({$kontakNamaExpr})";
-            } else {
-                $sort_column = "fs.{$sort_by}";
-            }
-        } else {
-            $sort_column = 'fs.submission_date';
-            $sort_dir    = 'DESC';
-        }
-
-        $query .= " ORDER BY {$sort_column} {$sort_dir}";
-        $query .= " LIMIT {$limit} OFFSET {$start}";
+        $query .= " ORDER BY {$sort_column} {$sort_dir} LIMIT " . (int)$limit . " OFFSET " . (int)$start;
 
         $this->db->query($query);
-        foreach ($params as $key => $value) {
-            $this->db->bind(ltrim($key, ':'), $value);
-        }
+        foreach ($params as $key => $value) $this->db->bind(ltrim($key, ':'), $value);
 
         return $this->db->resultSet();
     }
 
-    /** Ambil detail file by ID */
+    /**
+     * Mengambil detail file berdasarkan ID.
+     * @param int $id ID file.
+     * @return mixed Detail file.
+     */
     public function getSubmissionById($id) {
         $this->db->query("SELECT * FROM {$this->table} WHERE id = :id");
         $this->db->bind('id', (int)$id, PDO::PARAM_INT);
         return $this->db->single();
     }
 
-    /** Update setelah rename */
+    /**
+     * Memperbarui data setelah file diganti nama.
+     * @param int $id ID file.
+     * @param array $data Data baru.
+     * @return bool True jika berhasil.
+     */
     public function updateSubmissionRename($id, $data) {
         $query = "UPDATE {$this->table} SET
-                    original_file_name = :original_file_name,
-                    file_name          = :file_name,
-                    file_path          = :file_path,
-                    status             = :status,
-                    validation_notes   = :validation_notes,
-                    file_type          = :file_type,
-                    site_code          = :site_code,
-                    afdeling           = :afdeling,
-                    imei               = :imei,
-                    unit_code          = :unit_code,
-                    npk_driver         = :npk_driver,
-                    npk_mandor         = :npk_mandor
+                    original_file_name = :original_file_name, file_name = :file_name, file_path = :file_path,
+                    status = :status, validation_notes = :validation_notes, file_type = :file_type,
+                    site_code = :site_code, afdeling = :afdeling, imei = :imei,
+                    unit_code = :unit_code, npk_driver = :npk_driver, npk_mandor = :npk_mandor
                   WHERE id = :id";
 
         $this->db->query($query);
         $this->db->bind('id', (int)$id, PDO::PARAM_INT);
-
-        foreach ($data as $key => $value) {
-            $this->db->bind($key, $value);
-        }
-
+        foreach ($data as $key => $value) $this->db->bind($key, $value);
         $this->db->execute();
         return $this->db->rowCount() > 0;
     }
 
     /**
-     * Ambil metadata struktur tabel kontak_whatsapp agar query dinamis.
-     *
-     * @return array{type:string, join_field:string, name_field:string}
+     * Mendeteksi skema tabel kontak_whatsapp (lama atau baru).
+     * @return array Skema tabel.
      */
     private function getKontakSchema() {
-        if ($this->kontakSchema !== null) {
-            return $this->kontakSchema;
-        }
+        if ($this->kontakSchema !== null) return $this->kontakSchema;
 
         try {
             $this->db->query("SHOW COLUMNS FROM kontak_whatsapp");
-            $result = $this->db->resultSet();
+            $columns = array_column($this->db->resultSet(), 'Field');
         } catch (Exception $e) {
-            $result = [];
+            $columns = [];
         }
 
-        $columns = [];
-        foreach ($result as $column) {
-            $columns[] = $column['Field'];
-        }
-
-        if (in_array('nama', $columns, true) && in_array('nomer_wa', $columns, true)) {
-            $this->kontakSchema = [
-                'type' => 'new',
-                'join_field' => 'nomer_wa',
-                'name_field' => 'nama'
-            ];
+        if (in_array('nomer_wa', $columns, true)) {
+            $this->kontakSchema = ['type' => 'new', 'join_field' => 'nomer_wa', 'name_field' => 'nama'];
         } else {
-            $this->kontakSchema = [
-                'type' => 'old',
-                'join_field' => 'whatsapp_lid',
-                'name_field' => 'nama_lengkap'
-            ];
+            $this->kontakSchema = ['type' => 'old', 'join_field' => 'whatsapp_lid', 'name_field' => 'nama_lengkap'];
         }
-
         return $this->kontakSchema;
     }
 
     /**
-     * Bangun potongan LEFT JOIN kontak_whatsapp sesuai skema.
+     * Membangun klausa LEFT JOIN untuk tabel kontak.
+     * @return string Klausa JOIN.
      */
     private function getKontakJoinClause() {
         $schema = $this->getKontakSchema();
         $joinField = 'kw.' . $schema['join_field'];
-
-        if ($schema['type'] === 'new') {
-            $sanitizedSender = $this->getSanitizedSenderExpression('fs.sender_number');
-            return "LEFT JOIN kontak_whatsapp kw ON {$sanitizedSender} = {$joinField}";
-        }
-
-        return "LEFT JOIN kontak_whatsapp kw ON fs.sender_number = {$joinField}";
+        $senderExpr = $schema['type'] === 'new' ? $this->getSanitizedSenderExpression('fs.sender_number') : 'fs.sender_number';
+        return "LEFT JOIN kontak_whatsapp kw ON {$senderExpr} = {$joinField}";
     }
 
     /**
-     * Ekspresi SQL untuk nama kontak dengan fallback ke pengirim asli.
+     * Mendapatkan ekspresi SQL untuk nama kontak.
+     * @param string $fallbackColumn Kolom fallback jika nama tidak ditemukan.
+     * @return string Ekspresi SQL.
      */
     private function getKontakNamaExpression($fallbackColumn) {
         $schema = $this->getKontakSchema();
-        $nameField = 'kw.' . $schema['name_field'];
-
-        return "COALESCE(NULLIF({$nameField}, ''), {$fallbackColumn})";
+        return "COALESCE(NULLIF(kw.{$schema['name_field']}, ''), {$fallbackColumn})";
     }
 
     /**
-     * Normalisasi nomor pengirim agar cocok dengan nomer_wa (digit only).
+     * Menghasilkan ekspresi SQL untuk membersihkan nomor pengirim.
+     * @param string $column Nama kolom.
+     * @return string Ekspresi SQL.
      */
     private function getSanitizedSenderExpression($column) {
         $expr = $column;
-        $replacements = [
-            "'+'",
-            "'-'",
-            "' '",
-            "'.'",
-            "'@s.whatsapp.net'",
-            "'@c.us'",
-            "'@g.us'"
-        ];
-
-        foreach ($replacements as $replace) {
-            $expr = "REPLACE({$expr}, {$replace}, '')";
-        }
-
+        $replacements = ["'+'", "'-'", "' '", "'.'", "'@s.whatsapp.net'", "'@c.us'", "'@g.us'"];
+        foreach ($replacements as $r) $expr = "REPLACE({$expr}, {$r}, '')";
         return "TRIM({$expr})";
     }
 }

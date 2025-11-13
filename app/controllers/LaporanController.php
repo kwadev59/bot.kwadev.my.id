@@ -1,10 +1,25 @@
 <?php
+/**
+ * Class LaporanController
+ *
+ * Controller untuk mengelola laporan file yang masuk.
+ * Menyediakan fungsionalitas untuk melihat laporan valid dan invalid,
+ * mengunduh file, dan mengganti nama file yang invalid.
+ * Membutuhkan otentikasi pengguna.
+ */
 class LaporanController extends Controller {
-    // Regex validasi nama file
+    /** @var string Regex untuk validasi nama file TRB. */
     private $trbRegex = '/^TRB-(\d+)-(\d+)-([A-Z0-9]{4})-([A-Z]{2})-(\d{15})\.(csv|zip)$/i';
+    /** @var string Regex untuk validasi nama file TU. */
     private $tuRegex = '/^TU-([A-Z0-9]{8,9})-([A-Z0-9]{7})-([A-Z0-9]{7})-\d{8}-([A-Z0-9]{4})-([A-Z]{2})-(\d{15})\.(csv|zip)$/i';
+    /** @var string Regex untuk validasi nama file AmandaRB. */
     private $amandaRegex = '/^AMANDARB_([A-Z0-9]{4})_(\d{8})-([a-zA-Z0-9]+)\.(csv|zip)$/i';
 
+    /**
+     * LaporanController constructor.
+     *
+     * Memeriksa otentikasi pengguna.
+     */
     public function __construct() {
         if (!isset($_SESSION['user_id'])) {
             header('Location: ' . BASE_URL);
@@ -12,16 +27,28 @@ class LaporanController extends Controller {
         }
     }
 
+    /**
+     * Menampilkan daftar laporan dengan status 'valid'.
+     */
     public function valid() {
         $halaman = max(1, (int)($_GET['page'] ?? 1));
         $this->tampilkanLaporan('valid', $halaman);
     }
 
+    /**
+     * Menampilkan daftar laporan dengan status 'invalid'.
+     */
     public function invalid() {
         $halaman = max(1, (int)($_GET['page'] ?? 1));
         $this->tampilkanLaporan('invalid', $halaman);
     }
 
+    /**
+     * Metode privat untuk menampilkan laporan berdasarkan status.
+     *
+     * @param string $status Status laporan ('valid' atau 'invalid').
+     * @param int $halaman Nomor halaman saat ini.
+     */
     private function tampilkanLaporan($status, $halaman) {
         $submissionModel = $this->model('Submission_model');
         
@@ -65,7 +92,9 @@ class LaporanController extends Controller {
     }
 
     /**
-     * Download file
+     * Mengunduh file laporan berdasarkan ID.
+     *
+     * @param int $id ID file submission.
      */
     public function download($id) {
         $submissionModel = $this->model('Submission_model');
@@ -79,11 +108,8 @@ class LaporanController extends Controller {
         }
 
         $basePath = rtrim(str_replace('\\', '/', BOT_BASE_PATH), '/');
-
-        // hapus awalan storage-wa-bot/ kalau ada lalu rapikan separator
         $relativePath = ltrim(str_replace('\\', '/', preg_replace('/^storage-wa-bot[\/\\\\]/', '', $file['file_path'])), '/');
 
-        // kandidat base path: BOT_BASE_PATH & BOT_BASE_PATH/storage-wa-bot (kalau belum berada di sana)
         $baseCandidates = [$basePath];
         if (basename($basePath) !== 'storage-wa-bot') {
             $baseCandidates[] = $basePath . '/storage-wa-bot';
@@ -141,7 +167,7 @@ class LaporanController extends Controller {
     }
 
     /**
-     * Rename file
+     * Mengganti nama file yang invalid menjadi valid. Hanya menerima request POST.
      */
     public function rename() {
         if ($_SERVER['REQUEST_METHOD'] != 'POST') return;
@@ -164,14 +190,10 @@ class LaporanController extends Controller {
             exit;
         }
 
-        // Path lama dan baru
         $oldPath = rtrim(BOT_BASE_PATH, '/') . '/' . preg_replace('/^storage-wa-bot[\/\\\\]/', '', $oldData['file_path']);
-
-        // Pastikan struktur selalu: valid/<TIPE>/<nama_file>
         $newRelativePath = "valid/{$validationResult['type']}/{$newFileName}";
         $newFullPath = rtrim(BOT_BASE_PATH, '/') . '/' . $newRelativePath;
 
-        // Buat folder tujuan jika belum ada
         $newDir = dirname($newFullPath);
         if (!is_dir($newDir)) mkdir($newDir, 0775, true);
 
@@ -200,9 +222,10 @@ class LaporanController extends Controller {
     }
 
     /**
-     * Resolve full path untuk file yang ingin diunduh.
-     * Mengakomodasi konfigurasi BOT_BASE_PATH yang menunjuk ke root proyek
-     * atau langsung ke folder storage-wa-bot.
+     * Menyelesaikan path absolut file untuk diunduh.
+     *
+     * @param string $filePath Path relatif file.
+     * @return string|null Path absolut atau null jika tidak ditemukan.
      */
     private function resolveDownloadPath($filePath) {
         $normalizedFilePath = ltrim(str_replace('\\', '/', $filePath), '/');
@@ -267,7 +290,11 @@ class LaporanController extends Controller {
     }
 
     /**
-     * Pastikan path hasil resolve masih berada dalam root yang diizinkan.
+     * Memeriksa apakah path berada di dalam root yang diizinkan.
+     *
+     * @param string $path Path yang akan diperiksa.
+     * @param array $roots Array path root yang diizinkan.
+     * @return bool
      */
     private function isPathWithinAllowedRoots($path, array $roots) {
         foreach ($roots as $root) {
@@ -275,10 +302,15 @@ class LaporanController extends Controller {
                 return true;
             }
         }
-
         return false;
     }
     
+    /**
+     * Menghitung ketepatan waktu pengiriman file.
+     *
+     * @param array $submission Data submission.
+     * @return array|null Data ketepatan waktu atau null.
+     */
     private function calculateTimelinessForSubmission(array $submission): ?array {
         $fileDate = $this->resolveFileDateFromSubmission($submission);
         if (!$fileDate instanceof DateTime) {
@@ -318,6 +350,12 @@ class LaporanController extends Controller {
         ];
     }
 
+    /**
+     * Mengekstrak tanggal dari data submission.
+     *
+     * @param array $submission Data submission.
+     * @return DateTime|null Objek DateTime atau null.
+     */
     private function resolveFileDateFromSubmission(array $submission): ?DateTime {
         $candidates = [];
 
@@ -355,6 +393,12 @@ class LaporanController extends Controller {
         return null;
     }
 
+    /**
+     * Mem-parsing string tanggal ke objek DateTime.
+     *
+     * @param string|null $value String tanggal.
+     * @return DateTime|null
+     */
     private function parseDateString(?string $value): ?DateTime {
         $value = trim((string)$value);
         if ($value === '') {
@@ -362,83 +406,43 @@ class LaporanController extends Controller {
         }
 
         $formats = [
-            'Y-m-d',
-            'Y-m-d H:i:s',
-            'Y/m/d',
-            'Y/m/d H:i:s',
-            'd-m-Y',
-            'd-m-Y H:i:s',
-            'd/m/Y',
-            'd/m/Y H:i:s',
-            'Ymd',
-            'YmdHis',
+            'Y-m-d', 'Y-m-d H:i:s', 'Y/m/d', 'Y/m/d H:i:s',
+            'd-m-Y', 'd-m-Y H:i:s', 'd/m/Y', 'd/m/Y H:i:s',
+            'Ymd', 'YmdHis',
         ];
 
         foreach ($formats as $format) {
             $dateTime = DateTime::createFromFormat($format, $value);
-            if ($dateTime instanceof DateTime) {
-                return $dateTime;
-            }
+            if ($dateTime instanceof DateTime) return $dateTime;
         }
 
         $timestamp = strtotime($value);
-        if ($timestamp !== false) {
-            return (new DateTime())->setTimestamp($timestamp);
-        }
+        if ($timestamp !== false) return (new DateTime())->setTimestamp($timestamp);
 
         if (preg_match('/\b(20\d{2})(\d{2})(\d{2})\b/', $value, $matches)) {
             $normalized = sprintf('%s-%s-%s', $matches[1], $matches[2], $matches[3]);
             $dateTime = DateTime::createFromFormat('Y-m-d', $normalized);
-            if ($dateTime instanceof DateTime) {
-                return $dateTime;
-            }
+            if ($dateTime instanceof DateTime) return $dateTime;
         }
 
         return null;
     }
 
     /**
-     * Validasi nama file baru
+     * Memvalidasi nama file baru dan mengekstrak datanya.
+     *
+     * @param string $fileName Nama file baru.
+     * @return array Hasil validasi.
      */
     private function validateNewFileName($fileName) {
         if (preg_match($this->trbRegex, $fileName, $matches)) {
-            return [
-                'isValid' => true, 'type' => 'TRB',
-                'data' => [
-                    'site_code'   => $matches[3],
-                    'afdeling'    => $matches[4],
-                    'imei'        => $matches[5],
-                    'unit_code'   => null,
-                    'npk_driver'  => null,
-                    'npk_mandor'  => null
-                ]
-            ];
+            return ['isValid' => true, 'type' => 'TRB', 'data' => ['site_code' => $matches[3], 'afdeling' => $matches[4], 'imei' => $matches[5]]];
         }
         if (preg_match($this->tuRegex, $fileName, $matches)) {
-            return [
-                'isValid' => true, 'type' => 'TU',
-                'data' => [
-                    'unit_code'   => $matches[1],
-                    'npk_driver'  => $matches[2],
-                    'npk_mandor'  => $matches[3],
-                    'site_code'   => $matches[4],
-                    'afdeling'    => $matches[5],
-                    'imei'        => $matches[6]
-                ]
-            ];
+            return ['isValid' => true, 'type' => 'TU', 'data' => ['unit_code' => $matches[1], 'npk_driver' => $matches[2], 'npk_mandor' => $matches[3], 'site_code' => $matches[4], 'afdeling' => $matches[5], 'imei' => $matches[6]]];
         }
         if (preg_match($this->amandaRegex, $fileName, $matches)) {
-            return [
-                'isValid' => true, 'type' => 'AMANDARB',
-                'data' => [
-                    'site_code'   => $matches[1],
-                    'afdeling'    => null,
-                    'imei'        => null,
-                    'unit_code'   => null,
-                    'npk_driver'  => null,
-                    'npk_mandor'  => null
-                ]
-            ];
+            return ['isValid' => true, 'type' => 'AMANDARB', 'data' => ['site_code' => $matches[1]]];
         }
         return ['isValid' => false];
     }

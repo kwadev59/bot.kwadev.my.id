@@ -2,11 +2,31 @@
 
 use Shuchkin\SimpleXLSX;
 
+/**
+ * Class EmployeeSiteBaseController
+ *
+ * Controller dasar abstrak untuk mengelola data karyawan berdasarkan site.
+ * Menyediakan fungsionalitas CRUD, impor, dan paginasi.
+ * Kelas ini harus di-extend oleh controller spesifik untuk setiap site.
+ */
 abstract class EmployeeSiteBaseController extends Controller {
+    /**
+     * @var string Kode unik untuk site (misal: 'BIM1'). Harus di-override di kelas turunan.
+     */
     protected string $siteCode = 'BIM1';
+    /**
+     * @var string Label atau nama tampilan untuk site (misal: 'Karyawan BIM1'). Harus di-override di kelas turunan.
+     */
     protected string $siteLabel = 'Karyawan BIM1';
+    /**
+     * @var string Path routing untuk controller (misal: 'EmployeeBimController'). Harus di-override di kelas turunan.
+     */
     protected string $routePath = 'EmployeeBimController';
 
+    /**
+     * Memeriksa apakah pengguna sudah terotentikasi.
+     * Jika belum, arahkan ke halaman login.
+     */
     protected function requireAuth(): void {
         if (!isset($_SESSION['user_id'])) {
             header('Location: ' . BASE_URL);
@@ -14,6 +34,9 @@ abstract class EmployeeSiteBaseController extends Controller {
         }
     }
 
+    /**
+     * Menampilkan daftar karyawan dengan paginasi dan pencarian.
+     */
     public function index(): void {
         $this->requireAuth();
 
@@ -68,6 +91,10 @@ abstract class EmployeeSiteBaseController extends Controller {
         $this->view('templates/footer');
     }
 
+    /**
+     * Menyimpan data karyawan baru.
+     * Hanya menerima request POST.
+     */
     public function store(): void {
         $this->assertPostRequest();
         $this->requireAuth();
@@ -97,6 +124,10 @@ abstract class EmployeeSiteBaseController extends Controller {
         $this->redirectToSite($payload['site'], $redirectPage, $redirectQuery);
     }
 
+    /**
+     * Memperbarui data karyawan yang sudah ada.
+     * Hanya menerima request POST.
+     */
     public function update(): void {
         $this->assertPostRequest();
         $this->requireAuth();
@@ -137,6 +168,10 @@ abstract class EmployeeSiteBaseController extends Controller {
         $this->redirectToSite($payload['site'], $redirectPage, $redirectQuery);
     }
 
+    /**
+     * Mengimpor data karyawan dari file CSV atau XLSX.
+     * Hanya menerima request POST.
+     */
     public function import(): void {
         $this->assertPostRequest();
         $this->requireAuth();
@@ -214,6 +249,10 @@ abstract class EmployeeSiteBaseController extends Controller {
         $this->redirectToIndex($redirectPage, $redirectQuery);
     }
 
+    /**
+     * Memastikan request yang masuk adalah metode POST.
+     * Jika tidak, hentikan eksekusi dengan status 405 Method Not Allowed.
+     */
     protected function assertPostRequest(): void {
         if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
             http_response_code(405);
@@ -221,6 +260,12 @@ abstract class EmployeeSiteBaseController extends Controller {
         }
     }
 
+    /**
+     * Mengarahkan pengguna ke halaman indeks controller ini dengan parameter.
+     *
+     * @param int|null $page Nomor halaman untuk redirect.
+     * @param string|null $search Query pencarian untuk redirect.
+     */
     protected function redirectToIndex(?int $page = null, ?string $search = null): void {
         $params = [];
         if ($search !== null && $search !== '') {
@@ -239,6 +284,13 @@ abstract class EmployeeSiteBaseController extends Controller {
         exit;
     }
 
+    /**
+     * Mengarahkan pengguna ke halaman controller yang sesuai untuk site tertentu.
+     *
+     * @param string $site Kode site tujuan.
+     * @param int|null $page Nomor halaman untuk redirect.
+     * @param string|null $search Query pencarian untuk redirect.
+     */
     protected function redirectToSite(string $site, ?int $page = null, ?string $search = null): void {
         $route = $this->getRoutePathForSite($site) ?? $this->routePath;
 
@@ -259,6 +311,12 @@ abstract class EmployeeSiteBaseController extends Controller {
         exit;
     }
 
+    /**
+     * Membersihkan nilai parameter halaman untuk redirect.
+     *
+     * @param mixed $value Nilai yang akan divalidasi.
+     * @return int|null Nomor halaman yang valid atau null.
+     */
     protected function sanitizeRedirectPage($value): ?int {
         if ($value === null || $value === '') {
             return null;
@@ -268,6 +326,12 @@ abstract class EmployeeSiteBaseController extends Controller {
         return $page > 0 ? $page : null;
     }
 
+    /**
+     * Membersihkan query pencarian.
+     *
+     * @param mixed $value Nilai yang akan dibersihkan.
+     * @return string|null Query yang bersih atau null.
+     */
     protected function sanitizeSearchQuery($value): ?string {
         if ($value === null) {
             return null;
@@ -287,8 +351,10 @@ abstract class EmployeeSiteBaseController extends Controller {
     }
 
     /**
-     * @param array<string, mixed> $input
-     * @return array{0: array<string, mixed>, 1: array<int, string>}
+     * Memvalidasi input data karyawan.
+     *
+     * @param array<string, mixed> $input Data input dari POST atau file.
+     * @return array{0: array<string, mixed>, 1: array<int, string>} Array berisi payload yang valid dan array berisi pesan error.
      */
     protected function validateEmployeeInput(array $input): array {
         $errors = [];
@@ -341,7 +407,11 @@ abstract class EmployeeSiteBaseController extends Controller {
     }
 
     /**
-     * @return array<int, array<string, mixed>>
+     * Mem-parsing file CSV dan mengembalikan datanya sebagai array.
+     *
+     * @param string $path Path ke file CSV.
+     * @return array<int, array<string, mixed>> Data dari CSV.
+     * @throws RuntimeException jika file tidak dapat dibaca atau header tidak valid.
      */
     protected function parseCsv(string $path): array {
         $handle = fopen($path, 'r');
@@ -370,7 +440,11 @@ abstract class EmployeeSiteBaseController extends Controller {
     }
 
     /**
-     * @return array<int, array<string, mixed>>
+     * Mem-parsing file XLSX dan mengembalikan datanya sebagai array.
+     *
+     * @param string $path Path ke file XLSX.
+     * @return array<int, array<string, mixed>> Data dari XLSX.
+     * @throws RuntimeException jika file tidak dapat dibaca atau header tidak valid.
      */
     protected function parseXlsx(string $path): array {
         $xlsx = SimpleXLSX::parse($path);
@@ -400,8 +474,11 @@ abstract class EmployeeSiteBaseController extends Controller {
     }
 
     /**
-     * @param array<int, string|null> $row
-     * @return array<string, int>
+     * Menormalisasi baris header dari file impor.
+     *
+     * @param array<int, string|null> $row Baris header.
+     * @return array<string, int> Mapping dari nama kolom ke indeksnya.
+     * @throws RuntimeException jika kolom wajib tidak ditemukan.
      */
     protected function normalizeHeaderRow(array $row): array {
         $map = [];
@@ -428,9 +505,11 @@ abstract class EmployeeSiteBaseController extends Controller {
     }
 
     /**
-     * @param array<string, int> $headerMap
-     * @param array<int, mixed> $row
-     * @return array<string, mixed>
+     * Memetakan baris data dari file impor ke format array karyawan.
+     *
+     * @param array<string, int> $headerMap Mapping header.
+     * @param array<int, mixed> $row Baris data.
+     * @return array<string, mixed> Data karyawan yang sudah dipetakan.
      */
     protected function mapRowToEmployee(array $headerMap, array $row): array {
         $getValue = function (string $column) use ($headerMap, $row) {
@@ -453,7 +532,10 @@ abstract class EmployeeSiteBaseController extends Controller {
     }
 
     /**
-     * @param array<int, mixed> $row
+     * Memeriksa apakah sebuah baris dari file impor kosong.
+     *
+     * @param array<int, mixed> $row Baris data.
+     * @return bool True jika baris kosong, false sebaliknya.
      */
     protected function isEmptyRow(array $row): bool {
         foreach ($row as $value) {
@@ -465,6 +547,12 @@ abstract class EmployeeSiteBaseController extends Controller {
         return true;
     }
 
+    /**
+     * Menyimpan pesan flash ke dalam session.
+     *
+     * @param string $type Tipe pesan (misal: 'success', 'danger').
+     * @param string $message Isi pesan.
+     */
     protected function setFlash(string $type, string $message): void {
         $_SESSION['employee_flash'] = [
             'type'    => $type,
@@ -472,6 +560,11 @@ abstract class EmployeeSiteBaseController extends Controller {
         ];
     }
 
+    /**
+     * Mengambil dan menghapus pesan flash dari session.
+     *
+     * @return array|null Pesan flash atau null jika tidak ada.
+     */
     protected function consumeFlash(): ?array {
         if (!isset($_SESSION['employee_flash'])) {
             return null;
@@ -483,6 +576,11 @@ abstract class EmployeeSiteBaseController extends Controller {
         return $flash;
     }
 
+    /**
+     * Mendapatkan daftar opsi site yang tersedia.
+     *
+     * @return array<string, string>
+     */
     protected function getSiteOptions(): array {
         return [
             'BIM1' => 'BIM1',
@@ -490,6 +588,12 @@ abstract class EmployeeSiteBaseController extends Controller {
         ];
     }
 
+    /**
+     * Mendapatkan path routing controller untuk site tertentu.
+     *
+     * @param string $site Kode site.
+     * @return string|null Path routing atau null jika tidak ditemukan.
+     */
     protected function getRoutePathForSite(string $site): ?string {
         $site = strtoupper(trim($site));
         if ($site === 'PPS1') {

@@ -1,5 +1,17 @@
 <?php
+/**
+ * Class LogController
+ *
+ * Controller untuk menampilkan halaman log.
+ * Menyediakan tampilan untuk log file duplikat dan log aktivitas bot.
+ * Membutuhkan otentikasi pengguna.
+ */
 class LogController extends Controller {
+    /**
+     * LogController constructor.
+     *
+     * Memeriksa otentikasi pengguna.
+     */
     public function __construct() {
         if (!isset($_SESSION['user_id'])) {
             header('Location: ' . BASE_URL);
@@ -7,7 +19,10 @@ class LogController extends Controller {
         }
     }
 
-    // Method untuk log duplikat
+    /**
+     * Menampilkan halaman log untuk file duplikat.
+     * Mengambil data log duplikat dari model dan menampilkannya dengan paginasi.
+     */
     public function duplikat() {
         $logModel = $this->model('Log_model');
         
@@ -28,7 +43,10 @@ class LogController extends Controller {
         $this->view('templates/footer');
     }
 
-    // Method untuk log aktivitas
+    /**
+     * Menampilkan halaman log untuk aktivitas bot.
+     * Mengambil data log aktivitas dari model dan menampilkannya dengan paginasi.
+     */
     public function aktivitas() {
         $logModel = $this->model('Log_model');
         

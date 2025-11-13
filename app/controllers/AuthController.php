@@ -1,7 +1,16 @@
 <?php
+/**
+ * Class AuthController
+ *
+ * Mengelola otentikasi pengguna, termasuk login dan logout.
+ */
 class AuthController extends Controller {
     
-    // Method default, menampilkan halaman login
+    /**
+     * Menampilkan halaman login.
+     *
+     * Jika pengguna sudah login, akan diarahkan ke dashboard.
+     */
     public function index() {
         // Jika user sudah login, tendang ke dashboard
         if (isset($_SESSION['user_id'])) {
@@ -13,7 +22,12 @@ class AuthController extends Controller {
         $this->view('auth/login', $data);
     }
 
-    // Method untuk memproses data dari form login
+    /**
+     * Memproses permintaan login dari pengguna.
+     *
+     * Memverifikasi username dan password, membuat sesi jika berhasil,
+     * dan mengarahkan kembali dengan pesan error jika gagal.
+     */
     public function login() {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $userModel = $this->model('User_model');
@@ -42,6 +56,11 @@ class AuthController extends Controller {
         }
     }
 
+    /**
+     * Memproses permintaan logout.
+     *
+     * Menghancurkan sesi pengguna dan mengarahkan kembali ke halaman utama.
+     */
     public function logout() {
         if (session_status() !== PHP_SESSION_ACTIVE) {
             session_start();

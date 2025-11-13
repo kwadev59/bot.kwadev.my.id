@@ -1,7 +1,20 @@
 <?php
+/**
+ * Class TuMonitoringController
+ *
+ * Controller untuk monitoring pengiriman file TU (Transfer Unit).
+ * Menyediakan tampilan ringkasan, daftar driver yang belum mengirim, dan ekspor data.
+ * Membutuhkan otentikasi pengguna.
+ */
 class TuMonitoringController extends Controller {
+    /** @var string Regex untuk mem-parsing nama file TU. */
     private const TU_FILENAME_REGEX = '/^TU-([A-Z0-9]{8,9})-([A-Z0-9]{7})-([A-Z0-9]{7})-([0-9]{8})-([A-Z0-9]{4})-([A-Z]{2})-([A-Z0-9]{15})\.(CSV|ZIP)$/i';
 
+    /**
+     * TuMonitoringController constructor.
+     *
+     * Memeriksa otentikasi pengguna.
+     */
     public function __construct() {
         if (!isset($_SESSION['user_id'])) {
             header('Location: ' . BASE_URL);
@@ -9,6 +22,9 @@ class TuMonitoringController extends Controller {
         }
     }
 
+    /**
+     * Menampilkan halaman utama monitoring file TU.
+     */
     public function index() {
         $selectedDate = $this->resolveSelectedDate($_GET['tanggal'] ?? $_GET['date'] ?? null);
         $context = $this->prepareMonitoringContext($selectedDate);
@@ -32,6 +48,9 @@ class TuMonitoringController extends Controller {
         $this->view('templates/footer');
     }
 
+    /**
+     * Menampilkan daftar driver yang belum mengirim file TU pada tanggal yang dipilih.
+     */
     public function missing() {
         $selectedDate = $this->resolveSelectedDate($_GET['tanggal'] ?? $_GET['date'] ?? null);
         $context = $this->prepareMonitoringContext($selectedDate);
@@ -52,6 +71,9 @@ class TuMonitoringController extends Controller {
         $this->view('templates/footer');
     }
 
+    /**
+     * Mengekspor data monitoring TU ke dalam format CSV.
+     */
     public function exportCsv() {
         $selectedDate = $this->resolveSelectedDate($_GET['tanggal'] ?? $_GET['date'] ?? null);
         $context = $this->prepareMonitoringContext($selectedDate);
@@ -64,42 +86,14 @@ class TuMonitoringController extends Controller {
         header('Expires: 0');
 
         $output = fopen('php://output', 'w');
-        if ($output === false) {
-            exit;
-        }
+        if ($output === false) exit;
         fprintf($output, chr(0xEF) . chr(0xBB) . chr(0xBF));
 
-        $headers = [
-            'Site',
-            'Afdeling',
-            'NPK Driver',
-            'Nama',
-            'Status Gadget',
-            'Catatan Gadget',
-            'Status Kirim',
-            'Nama File',
-            'Pengirim',
-            'Dikirim Pada',
-            'Ketepatan',
-            'Catatan Validasi',
-        ];
+        $headers = ['Site', 'Afdeling', 'NPK Driver', 'Nama', 'Status Gadget', 'Catatan Gadget', 'Status Kirim', 'Nama File', 'Pengirim', 'Dikirim Pada', 'Ketepatan', 'Catatan Validasi'];
         fputcsv($output, $headers);
 
         foreach ($rows as $row) {
-            fputcsv($output, [
-                $row['site'],
-                $row['afdeling'],
-                $row['npk'],
-                $row['nama'],
-                $row['gadget_status'],
-                $row['gadget_notes'],
-                $row['status_kirim'],
-                $row['file_name'],
-                $row['pengirim'],
-                $row['dikirim_pada'],
-                $row['ketepatan'],
-                $row['catatan'],
-            ]);
+            fputcsv($output, array_values($row));
         }
 
         fclose($output);
@@ -107,9 +101,11 @@ class TuMonitoringController extends Controller {
     }
 
     /**
-     * @param array<int, array<string, mixed>> $employees
-     * @param array<string, array<int, string>> $siteAfdelingMap
-     * @return array<int, array<string, mixed>>
+     * Memfilter karyawan target untuk monitoring.
+     *
+     * @param array $employees Daftar semua karyawan.
+     * @param array $siteAfdelingMap Mapping site dan afdeling.
+     * @return array Karyawan yang relevan untuk monitoring.
      */
     private function filterTargetEmployees(array $employees, array $siteAfdelingMap): array {
         $filtered = [];
@@ -118,51 +114,41 @@ class TuMonitoringController extends Controller {
             $jabatan = strtoupper(trim((string)($employee['jabatan'] ?? '')));
             $isActive = !empty($employee['aktif']);
 
-            if ($jabatan !== 'DRIVER' || !$isActive) {
-                continue;
-            }
+            if ($jabatan !== 'DRIVER' || !$isActive) continue;
 
             $site = $this->normalizeSiteCode($employee['site'] ?? '');
             $afdeling = $this->normalizeAfdeling($employee['afd'] ?? '');
 
-            if (!isset($siteAfdelingMap[$site])) {
-                continue;
-            }
-            if (!in_array($afdeling, $siteAfdelingMap[$site], true)) {
-                continue;
-            }
+            if (!isset($siteAfdelingMap[$site]) || !in_array($afdeling, $siteAfdelingMap[$site], true)) continue;
 
             $filtered[] = [
-                'id'             => (int)($employee['id'] ?? 0),
-                'site'           => $site,
-                'afd'            => $afdeling,
-                'npk'            => trim((string)($employee['npk'] ?? '')),
+                'id' => (int)($employee['id'] ?? 0),
+                'site' => $site,
+                'afd' => $afdeling,
+                'npk' => trim((string)($employee['npk'] ?? '')),
                 'npk_normalized' => $this->normalizeNpk($employee['npk'] ?? ''),
-                'nama'           => strtoupper(trim((string)($employee['nama'] ?? ''))),
-                'jabatan'        => $jabatan,
+                'nama' => strtoupper(trim((string)($employee['nama'] ?? ''))),
+                'jabatan' => $jabatan,
             ];
         }
 
-        usort($filtered, function(array $a, array $b) {
-            return [$a['site'], $a['afd'], $a['nama'], $a['npk_normalized']]
-                <=> [$b['site'], $b['afd'], $b['nama'], $b['npk_normalized']];
-        });
+        usort($filtered, fn($a, $b) => [$a['site'], $a['afd'], $a['nama'], $a['npk_normalized']] <=> [$b['site'], $b['afd'], $b['nama'], $b['npk_normalized']]);
 
         return $filtered;
     }
 
     /**
-     * @param array<int, array<string, mixed>> $tuRows
-     * @return array<string, array<string, array<string, array<string, mixed>>>>
+     * Membangun indeks file TU untuk pencarian cepat.
+     *
+     * @param array $tuRows Daftar file TU dari database.
+     * @return array Indeks file TU.
      */
     private function buildTuIndex(array $tuRows): array {
         $index = [];
 
         foreach ($tuRows as $row) {
             $normalized = $this->normalizeTuSubmissionRow($row);
-            if ($normalized === null) {
-                continue;
-            }
+            if ($normalized === null) continue;
 
             $site = $normalized['site'];
             $afdeling = $normalized['afdeling'];
@@ -185,20 +171,16 @@ class TuMonitoringController extends Controller {
     }
 
     /**
-     * @param array<int, array<string, mixed>> $employees
-     * @param array<string, array<int, string>> $siteAfdelingMap
-     * @param array<string, array<string, array<string, array<string, mixed>>>> $tuIndex
-     * @param array<string, array<string, mixed>> $gadgetStatusIndex
-     * @param string $selectedDate
-     * @return array{0: array<string, array<string, array<int, array<string, mixed>>>>, 1: array<string, mixed>}
+     * Membangun data monitoring lengkap.
+     *
+     * @param array $employees Karyawan target.
+     * @param array $siteAfdelingMap Mapping site dan afdeling.
+     * @param array $tuIndex Indeks file TU.
+     * @param string $selectedDate Tanggal yang dimonitor.
+     * @param array $gadgetStatusIndex Indeks status gadget.
+     * @return array Data monitoring dan ringkasannya.
      */
-    private function buildMonitoringData(
-        array $employees,
-        array $siteAfdelingMap,
-        array $tuIndex,
-        string $selectedDate,
-        array $gadgetStatusIndex
-    ): array {
+    private function buildMonitoringData(array $employees, array $siteAfdelingMap, array $tuIndex, string $selectedDate, array $gadgetStatusIndex): array {
         $matrix = [];
         foreach ($siteAfdelingMap as $site => $afdelings) {
             foreach ($afdelings as $afdeling) {
@@ -208,11 +190,11 @@ class TuMonitoringController extends Controller {
 
         $siteKeys = array_keys($siteAfdelingMap);
         $summary = [
-            'total_drivers'      => count($employees),
-            'with_file'          => 0,
-            'without_file'       => 0,
+            'total_drivers' => count($employees),
+            'with_file' => 0,
+            'without_file' => 0,
             'site_driver_counts' => array_fill_keys($siteKeys, 0),
-            'site_file_counts'   => array_fill_keys($siteKeys, 0),
+            'site_file_counts' => array_fill_keys($siteKeys, 0),
         ];
 
         foreach ($employees as $employee) {
@@ -226,71 +208,52 @@ class TuMonitoringController extends Controller {
             if ($tuRecord !== null) {
                 $timeliness = $this->calculateTimeliness($tuRecord, $selectedDate);
                 $summary['with_file']++;
-                if (array_key_exists($site, $summary['site_file_counts'])) {
-                    $summary['site_file_counts'][$site]++;
-                } else {
-                    $summary['site_file_counts'][$site] = 1;
-                }
+                $summary['site_file_counts'][$site]++;
             } else {
                 $summary['without_file']++;
             }
-
-            if (array_key_exists($site, $summary['site_driver_counts'])) {
-                $summary['site_driver_counts'][$site]++;
-            } else {
-                $summary['site_driver_counts'][$site] = 1;
-            }
+            $summary['site_driver_counts'][$site]++;
 
             $matrix[$site][$afdeling][] = [
                 'employee' => $employee,
-                'tu'       => $tuRecord,
+                'tu' => $tuRecord,
                 'timeliness' => $timeliness,
                 'gadget_status' => $gadgetStatus,
             ];
         }
 
-        foreach ($matrix as $site => &$afdelingRows) {
-            ksort($afdelingRows);
-            foreach ($afdelingRows as &$rows) {
-                usort($rows, function(array $a, array $b) {
-                    return strcmp($a['employee']['nama'], $b['employee']['nama']);
-                });
-            }
-        }
-        unset($afdelingRows, $rows);
+        foreach ($matrix as &$afdelingRows) ksort($afdelingRows);
+        unset($afdelingRows);
 
         return [$matrix, $summary];
     }
 
+    /**
+     * Menyelesaikan dan memvalidasi tanggal yang dipilih.
+     *
+     * @param string|null $rawDate Tanggal dari input pengguna.
+     * @return string Tanggal dalam format Y-m-d.
+     */
     private function resolveSelectedDate(?string $rawDate): string {
-        if ($rawDate !== null) {
-            $rawDate = trim((string)$rawDate);
-        }
+        $rawDate = trim((string)$rawDate);
         $defaultDate = date('Y-m-d', strtotime('-1 day'));
 
-        if (empty($rawDate)) {
-            return $defaultDate;
-        }
+        if (empty($rawDate)) return $defaultDate;
 
-        $candidateFormats = ['Y-m-d', 'd-m-Y', 'd/m/Y'];
-        foreach ($candidateFormats as $format) {
+        foreach (['Y-m-d', 'd-m-Y', 'd/m/Y'] as $format) {
             $dateTime = DateTime::createFromFormat($format, $rawDate);
-            if ($dateTime instanceof DateTime) {
-                return $dateTime->format('Y-m-d');
-            }
+            if ($dateTime instanceof DateTime) return $dateTime->format('Y-m-d');
         }
 
         $timestamp = strtotime($rawDate);
-        if ($timestamp !== false) {
-            return date('Y-m-d', $timestamp);
-        }
-
-        return $defaultDate;
+        return $timestamp !== false ? date('Y-m-d', $timestamp) : $defaultDate;
     }
 
     /**
-     * @param array<string, mixed> $row
-     * @return array<string, string>|null
+     * Menormalisasi data dari baris submission file TU.
+     *
+     * @param array $row Data baris dari database.
+     * @return array|null Data yang sudah dinormalisasi atau null jika tidak valid.
      */
     private function normalizeTuSubmissionRow(array $row): ?array {
         $site = $this->normalizeSiteCode($row['site_code'] ?? '');
@@ -300,114 +263,73 @@ class TuMonitoringController extends Controller {
         if ($site === '' || $afdeling === '' || $npk === '') {
             $parsed = $this->parseTuFileName($row['file_name'] ?? '');
             if (!empty($parsed)) {
-                if ($site === '' && isset($parsed['site'])) {
-                    $site = $this->normalizeSiteCode($parsed['site']);
-                }
-                if ($afdeling === '' && isset($parsed['afdeling'])) {
-                    $afdeling = $this->normalizeAfdeling($parsed['afdeling']);
-                }
-                if ($npk === '' && isset($parsed['npk_driver'])) {
-                    $npk = $this->normalizeNpk($parsed['npk_driver']);
-                }
+                $site = $site ?: $this->normalizeSiteCode($parsed['site']);
+                $afdeling = $afdeling ?: $this->normalizeAfdeling($parsed['afdeling']);
+                $npk = $npk ?: $this->normalizeNpk($parsed['npk_driver']);
             }
         }
 
-        if ($site === '' || $afdeling === '' || $npk === '') {
-            return null;
-        }
-
-        return [
-            'site'       => $site,
-            'afdeling'   => $afdeling,
-            'npk_driver' => $npk,
-        ];
-    }
-
-    private function parseTimestamp($dateString): int {
-        if (empty($dateString)) {
-            return 0;
-        }
-        $timestamp = strtotime((string)$dateString);
-        return $timestamp !== false ? $timestamp : 0;
+        return ($site && $afdeling && $npk) ? ['site' => $site, 'afdeling' => $afdeling, 'npk_driver' => $npk] : null;
     }
 
     /**
-     * @param array<string, mixed> $tuRecord
+     * Mem-parsing timestamp dari string tanggal.
+     *
+     * @param mixed $dateString String tanggal.
+     * @return int Timestamp Unix.
+     */
+    private function parseTimestamp($dateString): int {
+        if (empty($dateString)) return 0;
+        $timestamp = strtotime((string)$dateString);
+        return $timestamp ?: 0;
+    }
+
+    /**
+     * Menghitung ketepatan waktu pengiriman.
+     *
+     * @param array $tuRecord Data rekaman TU.
+     * @param string $fallbackDate Tanggal fallback.
+     * @return array|null Informasi ketepatan waktu.
      */
     private function calculateTimeliness(array $tuRecord, string $fallbackDate): ?array {
-        $fileDateRaw = $tuRecord['tanggal_file_date'] ?? null;
-        if (is_array($fileDateRaw)) {
-            $fileDateRaw = $fileDateRaw['date'] ?? null;
-        }
-        $fileDateString = trim((string)($fileDateRaw ?: $fallbackDate));
-        if ($fileDateString === '') {
-            return null;
-        }
-
-        $fileDate = DateTime::createFromFormat('Y-m-d', substr($fileDateString, 0, 10));
-        if (!$fileDate instanceof DateTime) {
-            return null;
-        }
+        $fileDateRaw = $tuRecord['tanggal_file_date'] ?? $fallbackDate;
+        $fileDate = DateTime::createFromFormat('Y-m-d', substr((string)$fileDateRaw, 0, 10));
+        if (!$fileDate) return null;
         $fileDate->setTime(0, 0, 0);
 
-        $submissionTimestamp = $tuRecord['submission_timestamp'] ?? null;
-        if (!is_int($submissionTimestamp) || $submissionTimestamp <= 0) {
-            $submissionTimestamp = $this->parseTimestamp($tuRecord['submission_date'] ?? null);
-        }
-        if (!is_int($submissionTimestamp) || $submissionTimestamp <= 0) {
-            return null;
-        }
+        $submissionTimestamp = $tuRecord['submission_timestamp'] ?? $this->parseTimestamp($tuRecord['submission_date'] ?? null);
+        if (!$submissionTimestamp) return null;
 
         $submissionDate = (new DateTime())->setTimestamp($submissionTimestamp)->setTime(0, 0, 0);
-        $secondsDiff = $submissionDate->getTimestamp() - $fileDate->getTimestamp();
-        $daysDiff = (int)floor($secondsDiff / 86400);
+        $daysDiff = (int)floor(($submissionDate->getTimestamp() - $fileDate->getTimestamp()) / 86400);
 
         $label = sprintf('File dikirim H%s%d', $daysDiff >= 0 ? '+' : '', $daysDiff);
         $badgeClass = 'bg-secondary-subtle text-secondary';
         $icon = '';
 
-        if ($daysDiff <= -1) {
-            $badgeClass = 'bg-info-subtle text-info fw-semibold';
-        } elseif ($daysDiff <= 1) {
-            $badgeClass = 'bg-success-subtle text-success fw-semibold';
-        } elseif ($daysDiff === 2) {
-            $badgeClass = 'bg-warning-subtle text-warning fw-semibold';
-        } else {
+        if ($daysDiff <= -1) $badgeClass = 'bg-info-subtle text-info fw-semibold';
+        elseif ($daysDiff <= 1) $badgeClass = 'bg-success-subtle text-success fw-semibold';
+        elseif ($daysDiff === 2) $badgeClass = 'bg-warning-subtle text-warning fw-semibold';
+        else {
             $badgeClass = 'bg-danger-subtle text-danger fw-semibold';
             $icon = 'bi-exclamation-triangle-fill';
         }
 
-        return [
-            'label'      => $label,
-            'badge_class'=> $badgeClass,
-            'icon'       => $icon,
-            'days_diff'  => $daysDiff,
-        ];
+        return compact('label', 'badgeClass', 'icon', 'daysDiff');
     }
 
     /**
-     * @return array<string, array<int, string>>
+     * Mendapatkan mapping site ke afdeling.
+     * @return array<string,string[]>
      */
     private function getSiteAfdelingMap(): array {
-        return [
-            'BIM1' => ['OA', 'OB', 'OC', 'OD', 'OE', 'OF', 'OG'],
-            'PPS1' => ['OB', 'OC', 'OD', 'OE', 'OF'],
-        ];
+        return ['BIM1' => ['OA', 'OB', 'OC', 'OD', 'OE', 'OF', 'OG'], 'PPS1' => ['OB', 'OC', 'OD', 'OE', 'OF']];
     }
 
     private function normalizeSiteCode(?string $site): string {
         $site = strtoupper(preg_replace('/\s+/', '', (string)$site));
-        if ($site === '') {
-            return '';
-        }
-
-        if ($site === 'BIM') {
-            return 'BIM1';
-        }
-        if ($site === 'PPS') {
-            return 'PPS1';
-        }
-
+        if ($site === 'BIM') return 'BIM1';
+        if ($site === 'PPS') return 'PPS1';
         return $site;
     }
 
@@ -420,63 +342,47 @@ class TuMonitoringController extends Controller {
     }
 
     /**
+     * Mem-parsing nama file TU.
      * @return array<string, string>|null
      */
     private function parseTuFileName(?string $fileName): ?array {
-        $fileName = trim((string)$fileName);
-        if ($fileName === '') {
-            return null;
-        }
-
-        if (preg_match(self::TU_FILENAME_REGEX, $fileName, $matches)) {
+        if (preg_match(self::TU_FILENAME_REGEX, trim((string)$fileName), $matches)) {
             return [
-                'unit_code'  => strtoupper($matches[1]),
-                'npk_driver' => strtoupper($matches[2]),
-                'npk_mandor' => strtoupper($matches[3]),
-                'date'       => $matches[4],
-                'site'       => strtoupper($matches[5]),
-                'afdeling'   => strtoupper($matches[6]),
-                'imei'       => strtoupper($matches[7]),
+                'unit_code' => strtoupper($matches[1]), 'npk_driver' => strtoupper($matches[2]),
+                'npk_mandor' => strtoupper($matches[3]), 'date' => $matches[4],
+                'site' => strtoupper($matches[5]), 'afdeling' => strtoupper($matches[6]),
+                'imei' => strtoupper($matches[7]),
             ];
         }
-
         return null;
     }
 
     /**
+     * Menyiapkan konteks data untuk monitoring.
      * @return array<string,mixed>
      */
     private function prepareMonitoringContext(string $selectedDate): array {
         $siteAfdelingMap = $this->getSiteAfdelingMap();
-
         $employeeModel = $this->model('Employee_model');
         $targetEmployees = $this->filterTargetEmployees($employeeModel->getAll(), $siteAfdelingMap);
-
-        /** @var GadgetStatus_model $gadgetStatusModel */
         $gadgetStatusModel = $this->model('GadgetStatus_model');
         $gadgetStatuses = $gadgetStatusModel->getStatusMapByNpks(array_column($targetEmployees, 'npk_normalized'));
-
         $submissionModel = $this->model('Submission_model');
         $tuSubmissions = $submissionModel->getTuSubmissionsByFileDate($selectedDate);
         $tuIndex = $this->buildTuIndex($tuSubmissions);
 
-        [$monitoringMatrix, $summary] = $this->buildMonitoringData(
-            $targetEmployees,
-            $siteAfdelingMap,
-            $tuIndex,
-            $selectedDate,
-            $gadgetStatuses
-        );
+        [$monitoringMatrix, $summary] = $this->buildMonitoringData($targetEmployees, $siteAfdelingMap, $tuIndex, $selectedDate, $gadgetStatuses);
 
         return [
-            'monitoring'         => $monitoringMatrix,
-            'summary'            => $summary,
+            'monitoring' => $monitoringMatrix,
+            'summary' => $summary,
             'tu_available_count' => count($tuSubmissions),
         ];
     }
 
     /**
-     * @param array<string,array<string,array<int,array<string,mixed>>>> $monitoring
+     * Mengekstrak daftar driver yang belum mengirim file.
+     * @param array $monitoring Data monitoring.
      * @return array<int,array<string,string>>
      */
     private function extractMissingDrivers(array $monitoring): array {
@@ -484,32 +390,19 @@ class TuMonitoringController extends Controller {
         foreach ($monitoring as $site => $afdelings) {
             foreach ($afdelings as $afdeling => $rows) {
                 foreach ($rows as $row) {
-                    $employee = $row['employee'] ?? [];
-                    $tu = $row['tu'] ?? null;
-                    if (!empty($tu)) {
-                        continue;
-                    }
-                    $gadgetStatus = $row['gadget_status'] ?? null;
-                    $gadgetLabel = null;
-                    $gadgetNotes = null;
-                    if (is_array($gadgetStatus)) {
-                        $gadgetLabel = strtoupper(trim((string)($gadgetStatus['status'] ?? '')));
-                        $gadgetNotes = trim((string)($gadgetStatus['notes'] ?? ''));
-                    }
-                    $normalizedLabel = strtoupper(trim((string)$gadgetLabel));
-                    if ($normalizedLabel === 'RUSAK') {
-                        continue;
-                    }
+                    if (!empty($row['tu'])) continue;
 
+                    $gadgetStatus = $row['gadget_status'] ?? null;
+                    $gadgetLabel = strtoupper(trim((string)($gadgetStatus['status'] ?? '')));
+                    if ($gadgetLabel === 'RUSAK') continue;
+
+                    $employee = $row['employee'] ?? [];
                     $list[] = [
-                        'site'     => $site,
-                        'afdeling' => $afdeling,
-                        'npk'      => $employee['npk'] ?? '-',
-                        'nama'     => isset($employee['nama'])
-                            ? ucwords(strtolower((string)$employee['nama']))
-                            : '-',
+                        'site' => $site, 'afdeling' => $afdeling,
+                        'npk' => $employee['npk'] ?? '-',
+                        'nama' => isset($employee['nama']) ? ucwords(strtolower((string)$employee['nama'])) : '-',
                         'gadget_status' => $gadgetLabel,
-                        'gadget_notes'  => $gadgetNotes,
+                        'gadget_notes' => trim((string)($gadgetStatus['notes'] ?? '')),
                     ];
                 }
             }
@@ -518,7 +411,8 @@ class TuMonitoringController extends Controller {
     }
 
     /**
-     * @param array<string,array<string,array<int,array<string,mixed>>>> $monitoring
+     * Meratakan data monitoring untuk ekspor CSV.
+     * @param array $monitoring Data monitoring.
      * @return array<int,array<string,string>>
      */
     private function flattenMonitoringRows(array $monitoring): array {
@@ -531,65 +425,36 @@ class TuMonitoringController extends Controller {
                     $timeliness = $entry['timeliness'] ?? null;
                     $gadgetStatus = $entry['gadget_status'] ?? null;
 
-                    $npk = $employee['npk'] ?? $employee['npk_normalized'] ?? '-';
-                    $nama = isset($employee['nama'])
-                        ? ucwords(strtolower((string)$employee['nama']))
-                        : '-';
+                    $gadgetLabel = strtoupper(trim((string)($gadgetStatus['status'] ?? '')));
+                    if ($gadgetLabel === '') $gadgetLabel = 'BELUM DISET';
 
-                    $gadgetLabel = '';
-                    $gadgetNotes = '';
-                    if (is_array($gadgetStatus)) {
-                        $gadgetLabel = strtoupper(trim((string)($gadgetStatus['status'] ?? '')));
-                        $gadgetNotes = trim((string)($gadgetStatus['notes'] ?? ''));
-                    }
-                    if ($gadgetLabel === '') {
-                        $gadgetLabel = 'BELUM DISET';
-                    }
-
-                    $statusKirim = empty($tu) ? 'BELUM KIRIM' : 'SUDAH KIRIM';
-                    $fileName = $tu['file_name'] ?? '';
                     $senderLabel = '';
                     if (!empty($tu)) {
                         $senderName = trim((string)($tu['nama_lengkap'] ?? ''));
                         $senderNumber = trim((string)($tu['sender_number'] ?? ''));
-                        if ($senderName !== '' && $senderNumber !== '') {
-                            $senderLabel = $senderName . ' (' . $senderNumber . ')';
-                        } elseif ($senderName !== '') {
-                            $senderLabel = $senderName;
-                        } elseif ($senderNumber !== '') {
-                            $senderLabel = $senderNumber;
-                        }
+                        if ($senderName && $senderNumber) $senderLabel = "$senderName ($senderNumber)";
+                        elseif ($senderName) $senderLabel = $senderName;
+                        elseif ($senderNumber) $senderLabel = $senderNumber;
                     }
 
                     $sentAt = '';
                     if (!empty($tu)) {
-                        $sentTimestamp = $tu['submission_timestamp'] ?? null;
-                        if (!is_int($sentTimestamp) || $sentTimestamp <= 0) {
-                            $sentTimestamp = strtotime((string)($tu['submission_date'] ?? ''));
-                        }
-                        if (is_int($sentTimestamp) && $sentTimestamp > 0) {
-                            $sentAt = date('Y-m-d H:i', $sentTimestamp);
-                        }
-                    }
-
-                    $ketepatan = '';
-                    if (is_array($timeliness) && !empty($timeliness['label'])) {
-                        $ketepatan = $timeliness['label'];
+                        $sentTimestamp = $tu['submission_timestamp'] ?? strtotime((string)($tu['submission_date'] ?? ''));
+                        if ($sentTimestamp) $sentAt = date('Y-m-d H:i', $sentTimestamp);
                     }
 
                     $rows[] = [
-                        'site'          => $site,
-                        'afdeling'      => $afdeling,
-                        'npk'           => $npk,
-                        'nama'          => $nama,
+                        'site' => $site, 'afdeling' => $afdeling,
+                        'npk' => $employee['npk'] ?? '-',
+                        'nama' => isset($employee['nama']) ? ucwords(strtolower((string)$employee['nama'])) : '-',
                         'gadget_status' => $gadgetLabel,
-                        'gadget_notes'  => $gadgetNotes,
-                        'status_kirim'  => $statusKirim,
-                        'file_name'     => $fileName,
-                        'pengirim'      => $senderLabel,
-                        'dikirim_pada'  => $sentAt,
-                        'ketepatan'     => $ketepatan,
-                        'catatan'       => trim((string)($tu['validation_notes'] ?? '')),
+                        'gadget_notes' => trim((string)($gadgetStatus['notes'] ?? '')),
+                        'status_kirim' => empty($tu) ? 'BELUM KIRIM' : 'SUDAH KIRIM',
+                        'file_name' => $tu['file_name'] ?? '',
+                        'pengirim' => $senderLabel,
+                        'dikirim_pada' => $sentAt,
+                        'ketepatan' => $timeliness['label'] ?? '',
+                        'catatan' => trim((string)($tu['validation_notes'] ?? '')),
                     ];
                 }
             }

@@ -1,8 +1,14 @@
 <?php
 
+/**
+ * Class GadgetStatusController
+ *
+ * Controller untuk mengelola dan menampilkan status gadget yang digunakan oleh driver.
+ * Hanya dapat diakses oleh admin.
+ */
 class GadgetStatusController extends Controller {
     /**
-     * @var array<string,string>
+     * @var array<string,string> Opsi filter berdasarkan site.
      */
     private array $siteOptions = [
         'ALL'  => 'Semua Site',
@@ -11,7 +17,7 @@ class GadgetStatusController extends Controller {
     ];
 
     /**
-     * @var array<string,string>
+     * @var array<string,string> Opsi status gadget yang valid.
      */
     private array $statusOptions = [
         'normal' => 'Normal',
@@ -19,10 +25,15 @@ class GadgetStatusController extends Controller {
     ];
 
     /**
-     * @var int[]
+     * @var int[] Opsi jumlah item per halaman.
      */
     private array $perPageOptions = [25, 50, 100, 250];
 
+    /**
+     * GadgetStatusController constructor.
+     *
+     * Memastikan hanya admin yang dapat mengakses controller ini.
+     */
     public function __construct() {
         if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
             header('Location: ' . BASE_URL);
@@ -30,6 +41,9 @@ class GadgetStatusController extends Controller {
         }
     }
 
+    /**
+     * Menampilkan halaman daftar status gadget driver dengan filter dan paginasi.
+     */
     public function index(): void {
         $site = strtoupper(trim((string)($_GET['site'] ?? 'ALL')));
         if (!array_key_exists($site, $this->siteOptions)) {
@@ -145,6 +159,10 @@ class GadgetStatusController extends Controller {
         $this->view('templates/footer');
     }
 
+    /**
+     * Memperbarui status gadget untuk seorang driver.
+     * Hanya menerima request POST.
+     */
     public function update(): void {
         if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
             header('Location: ' . BASE_URL . '/GadgetStatusController');
@@ -224,6 +242,12 @@ class GadgetStatusController extends Controller {
         exit;
     }
 
+    /**
+     * Membangun URL redirect dengan mempertahankan parameter filter.
+     *
+     * @param array $params Parameter untuk URL.
+     * @return string URL lengkap.
+     */
     private function buildRedirectUrl(array $params): string {
         $site = strtoupper(trim((string)($params['site'] ?? 'ALL')));
         if (!array_key_exists($site, $this->siteOptions)) {
@@ -269,6 +293,12 @@ class GadgetStatusController extends Controller {
         return $url;
     }
 
+    /**
+     * Menetapkan pesan flash di session.
+     *
+     * @param string $type Tipe pesan ('success', 'danger', dll.).
+     * @param string $message Isi pesan.
+     */
     private function setFlash(string $type, string $message): void {
         $_SESSION['flash'] = [
             'tipe'  => $type,
@@ -276,6 +306,11 @@ class GadgetStatusController extends Controller {
         ];
     }
 
+    /**
+     * Mengambil dan menghapus pesan flash dari session.
+     *
+     * @return array|null Pesan flash atau null jika tidak ada.
+     */
     private function pullFlash(): ?array {
         if (!isset($_SESSION['flash'])) {
             return null;
@@ -285,6 +320,11 @@ class GadgetStatusController extends Controller {
         return $flash;
     }
 
+    /**
+     * Mendapatkan mapping site ke afdeling.
+     *
+     * @return array<string,string[]>
+     */
     private function getSiteAfdelingMap(): array {
         return [
             'BIM1' => ['OA', 'OB', 'OC', 'OD', 'OE', 'OF', 'OG'],

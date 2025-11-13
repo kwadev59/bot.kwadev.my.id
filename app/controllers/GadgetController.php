@@ -1,7 +1,14 @@
 <?php
+/**
+ * Class GadgetController
+ *
+ * Controller untuk mengelola data gadget (perangkat) untuk berbagai site.
+ * Hanya dapat diakses oleh admin. Menyediakan fungsionalitas untuk menampilkan,
+ * mengimpor, dan men-download template data gadget.
+ */
 class GadgetController extends Controller {
     /**
-     * @var array<string,string>
+     * @var array<string,string> Judul halaman untuk setiap tipe data gadget.
      */
     private array $typeTitles = [
         'bim1' => 'Data Gadget BIM1',
@@ -9,7 +16,7 @@ class GadgetController extends Controller {
     ];
 
     /**
-     * @var array<string,array<string,string>>
+     * @var array<string,array<string,string>> Nama file template untuk setiap tipe data.
      */
     private array $templateFiles = [
         'bim1' => [
@@ -23,10 +30,15 @@ class GadgetController extends Controller {
     ];
 
     /**
-     * @var int[]
+     * @var int[] Opsi jumlah item per halaman untuk paginasi.
      */
     private array $perPageOptions = [25, 50, 100, 250];
 
+    /**
+     * GadgetController constructor.
+     *
+     * Memeriksa otentikasi dan peran admin.
+     */
     public function __construct() {
         if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
             header('Location: ' . BASE_URL);
@@ -34,14 +46,25 @@ class GadgetController extends Controller {
         }
     }
 
+    /**
+     * Menampilkan halaman data gadget untuk site BIM1.
+     */
     public function bim1() {
         $this->renderPage('bim1');
     }
 
+    /**
+     * Menampilkan halaman data gadget untuk site PPS1.
+     */
     public function pps1() {
         $this->renderPage('pps1');
     }
 
+    /**
+     * Mengimpor data gadget dari file (CSV/XLSX).
+     *
+     * @param string $type Tipe data (site) yang akan diimpor.
+     */
     public function import($type) {
         $type = strtolower(trim((string)$type));
         $redirectUrl = $this->pageUrl($type);
@@ -122,6 +145,12 @@ class GadgetController extends Controller {
         exit;
     }
 
+    /**
+     * Mengunduh file template untuk impor data.
+     *
+     * @param string $type Tipe data (site).
+     * @param string $format Format file ('csv' atau 'xlsx').
+     */
     public function downloadTemplate($type, $format = 'csv') {
         $type = strtolower(trim((string)$type));
         $format = strtolower(trim((string)$format));
@@ -163,6 +192,11 @@ class GadgetController extends Controller {
         exit;
     }
 
+    /**
+     * Merender halaman daftar gadget untuk tipe (site) tertentu.
+     *
+     * @param string $type Tipe data (site).
+     */
     private function renderPage(string $type): void {
         if (!isset($this->typeTitles[$type])) {
             header('Location: ' . BASE_URL);
@@ -232,7 +266,12 @@ class GadgetController extends Controller {
     }
 
     /**
+     * Membaca baris dari file spreadsheet (CSV atau XLSX).
+     *
+     * @param string $path Path ke file.
+     * @param string $extension Ekstensi file ('csv' atau 'xlsx').
      * @return array<int, array<int, string>>
+     * @throws InvalidArgumentException Jika ekstensi tidak didukung.
      */
     private function readSpreadsheetRows(string $path, string $extension): array {
         if ($extension === 'csv') {
@@ -247,7 +286,11 @@ class GadgetController extends Controller {
     }
 
     /**
+     * Membaca baris dari file CSV.
+     *
+     * @param string $path Path ke file CSV.
      * @return array<int, array<int, string>>
+     * @throws RuntimeException Jika file tidak dapat dibuka.
      */
     private function readCsvRows(string $path): array {
         $handle = fopen($path, 'r');
@@ -284,7 +327,11 @@ class GadgetController extends Controller {
     }
 
     /**
+     * Membaca baris dari file XLSX.
+     *
+     * @param string $path Path ke file XLSX.
      * @return array<int, array<int, string>>
+     * @throws RuntimeException Jika file tidak dapat dibuka atau worksheet tidak ditemukan.
      */
     private function readXlsxRows(string $path): array {
         if (!class_exists('ZipArchive')) {
@@ -315,7 +362,12 @@ class GadgetController extends Controller {
     }
 
     /**
+     * Mem-parsing konten XML dari worksheet XLSX.
+     *
+     * @param string $xmlContent Konten XML worksheet.
+     * @param array $sharedStrings Array shared strings dari file XLSX.
      * @return array<int, array<int, string>>
+     * @throws RuntimeException Jika worksheet tidak valid.
      */
     private function parseWorksheet(string $xmlContent, array $sharedStrings): array {
         $document = simplexml_load_string($xmlContent);
@@ -348,6 +400,13 @@ class GadgetController extends Controller {
         return $rows;
     }
 
+    /**
+     * Mengekstrak nilai dari sebuah sel (cell) XML.
+     *
+     * @param SimpleXMLElement $cell Elemen XML sel.
+     * @param array $sharedStrings Array shared strings.
+     * @return string Nilai sel.
+     */
     private function extractCellValue(SimpleXMLElement $cell, array $sharedStrings): string {
         $type = (string)($cell['t'] ?? '');
 
@@ -371,6 +430,12 @@ class GadgetController extends Controller {
         return (string)($cell->v ?? '');
     }
 
+    /**
+     * Mengkonversi referensi kolom (misal: 'A', 'B', 'AA') menjadi indeks berbasis nol.
+     *
+     * @param string $reference Referensi kolom.
+     * @return int Indeks kolom.
+     */
     private function columnIndexFromReference(string $reference): int {
         $letters = preg_replace('/[^A-Z]/i', '', strtoupper($reference));
         $index = 0;
@@ -382,6 +447,9 @@ class GadgetController extends Controller {
     }
 
     /**
+     * Mem-parsing shared strings dari file XLSX.
+     *
+     * @param string $xmlContent Konten XML shared strings.
      * @return array<int,string>
      */
     private function parseSharedStrings(string $xmlContent): array {
@@ -407,6 +475,12 @@ class GadgetController extends Controller {
         return $strings;
     }
 
+    /**
+     * Membersihkan nilai sel.
+     *
+     * @param mixed $value Nilai sel.
+     * @return string Nilai yang sudah dibersihkan.
+     */
     private function cleanCellValue($value): string {
         if ($value === null) {
             return '';
@@ -417,9 +491,12 @@ class GadgetController extends Controller {
     }
 
     /**
-     * @param array<int,string> $header
-     * @param array<int,array<int,string>> $rows
+     * Memetakan baris-baris data ke skema database.
+     *
+     * @param array<int,string> $header Header file.
+     * @param array<int,array<int,string>> $rows Baris-baris data.
      * @return array<int,array<string,mixed>>
+     * @throws RuntimeException Jika kolom wajib tidak ditemukan.
      */
     private function mapRowsToSchema(array $header, array $rows): array {
         $normalizedHeader = [];
@@ -493,6 +570,8 @@ class GadgetController extends Controller {
     }
 
     /**
+     * Mendapatkan alias-alias untuk header kolom.
+     *
      * @return array<string,array<int,string>>
      */
     private function headerAliases(): array {
@@ -515,6 +594,12 @@ class GadgetController extends Controller {
         ];
     }
 
+    /**
+     * Menormalisasi kunci header.
+     *
+     * @param string $value Kunci header.
+     * @return string Kunci yang sudah dinormalisasi.
+     */
     private function normalizeHeaderKey(string $value): string {
         $value = strtolower($value);
         $value = preg_replace('/[^a-z0-9]+/', ' ', $value);
@@ -523,6 +608,14 @@ class GadgetController extends Controller {
         return $value;
     }
 
+    /**
+     * Mengambil nilai dari baris berdasarkan field, atau null jika tidak ada.
+     *
+     * @param array $row Baris data.
+     * @param array $indexes Mapping field ke indeks kolom.
+     * @param string $field Nama field.
+     * @return string|null
+     */
     private function valueOrNull(array $row, array $indexes, string $field): ?string {
         if (!isset($indexes[$field])) {
             return null;
@@ -537,6 +630,14 @@ class GadgetController extends Controller {
         return $value === '' ? null : $value;
     }
 
+    /**
+     * Mengambil nilai numerik dari baris.
+     *
+     * @param array $row Baris data.
+     * @param array $indexes Mapping field ke indeks kolom.
+     * @param string $field Nama field.
+     * @return int|null
+     */
     private function numericValue(array $row, array $indexes, string $field): ?int {
         $raw = $this->valueOrNull($row, $indexes, $field);
         if ($raw === null) {
@@ -551,6 +652,12 @@ class GadgetController extends Controller {
         return null;
     }
 
+    /**
+     * Membuat URL untuk halaman gadget berdasarkan tipe.
+     *
+     * @param string $type Tipe data (site).
+     * @return string URL halaman.
+     */
     private function pageUrl(string $type): string {
         return BASE_URL . '/GadgetController/' . ($type === 'pps1' ? 'pps1' : 'bim1');
     }

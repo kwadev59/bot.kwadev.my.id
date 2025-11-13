@@ -1,5 +1,16 @@
 <?php
+/**
+ * Class UserController
+ *
+ * Controller untuk manajemen pengguna. Hanya dapat diakses oleh admin.
+ * Menyediakan fungsionalitas CRUD untuk data pengguna.
+ */
 class UserController extends Controller {
+    /**
+     * UserController constructor.
+     *
+     * Memeriksa apakah pengguna adalah admin. Jika tidak, arahkan ke halaman utama.
+     */
     public function __construct() {
         if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
             header('Location: ' . BASE_URL);
@@ -7,6 +18,9 @@ class UserController extends Controller {
         }
     }
 
+    /**
+     * Menampilkan halaman utama manajemen pengguna dengan daftar semua pengguna.
+     */
     public function index() {
         $userModel = $this->model('User_model');
         
@@ -20,25 +34,24 @@ class UserController extends Controller {
         $this->view('templates/footer');
     }
 
+    /**
+     * Menambahkan pengguna baru. Hanya menerima request POST.
+     */
     public function tambah() {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $userModel = $this->model('User_model');
             
-            // Validasi input
             $username = trim($_POST['username']);
             $password = $_POST['password'];
             $nama_lengkap = trim($_POST['nama_lengkap']);
             $role = $_POST['role'];
             
-            // Cek apakah username sudah ada
-            $existingUser = $userModel->getUserByUsername($username);
-            if ($existingUser) {
+            if ($userModel->getUserByUsername($username)) {
                 $_SESSION['flash'] = ['pesan' => 'Username sudah digunakan.', 'tipe' => 'error'];
                 header('Location: ' . BASE_URL . '/UserController');
                 exit;
             }
             
-            // Validasi password (minimal 6 karakter)
             if (strlen($password) < 6) {
                 $_SESSION['flash'] = ['pesan' => 'Password minimal 6 karakter.', 'tipe' => 'error'];
                 header('Location: ' . BASE_URL . '/UserController');
@@ -63,6 +76,9 @@ class UserController extends Controller {
         }
     }
 
+    /**
+     * Memperbarui data pengguna. Hanya menerima request POST.
+     */
     public function update() {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $userModel = $this->model('User_model');
@@ -73,14 +89,12 @@ class UserController extends Controller {
             $role = $_POST['role'];
             $password = $_POST['password'] ?? '';
             
-            // Cek apakah user yang diupdate adalah user sendiri
             if ($id == $_SESSION['user_id'] && $role !== $_SESSION['role']) {
                 $_SESSION['flash'] = ['pesan' => 'Anda tidak dapat mengubah peran Anda sendiri.', 'tipe' => 'error'];
                 header('Location: ' . BASE_URL . '/UserController');
                 exit;
             }
             
-            // Jika password diisi, hash password baru
             $data = [
                 'username' => $username,
                 'nama_lengkap' => $nama_lengkap,
@@ -107,10 +121,14 @@ class UserController extends Controller {
         }
     }
 
+    /**
+     * Menghapus pengguna berdasarkan ID.
+     *
+     * @param int $id ID pengguna yang akan dihapus.
+     */
     public function hapus($id) {
         $userModel = $this->model('User_model');
         
-        // Tidak dapat menghapus akun sendiri
         if ($id == $_SESSION['user_id']) {
             $_SESSION['flash'] = ['pesan' => 'Anda tidak dapat menghapus akun Anda sendiri.', 'tipe' => 'error'];
         } else {

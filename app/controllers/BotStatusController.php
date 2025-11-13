@@ -1,5 +1,17 @@
 <?php
+/**
+ * Class BotStatusController
+ *
+ * Controller untuk mengelola interaksi dengan WA Bot API.
+ * Menyediakan fungsionalitas untuk memeriksa status, mendapatkan QR code, restart, logout, dan cek nomor.
+ * Membutuhkan otentikasi pengguna untuk semua metode.
+ */
 class BotStatusController extends Controller {
+    /**
+     * BotStatusController constructor.
+     *
+     * Memeriksa otentikasi pengguna. Jika tidak login, arahkan ke halaman utama.
+     */
     public function __construct() {
         if (!isset($_SESSION['user_id'])) {
             header('Location: ' . BASE_URL);
@@ -7,6 +19,9 @@ class BotStatusController extends Controller {
         }
     }
 
+    /**
+     * Menampilkan halaman status bot.
+     */
     public function index() {
         $data['judul'] = 'Status Bot WhatsApp';
         $data['nama_user'] = $_SESSION['nama_lengkap'];
@@ -17,6 +32,10 @@ class BotStatusController extends Controller {
         $this->view('templates/footer');
     }
 
+    /**
+     * API endpoint untuk mendapatkan status bot.
+     * Mengembalikan data status dalam format JSON.
+     */
     public function getStatus() {
         $result = $this->callBotApi('/api/status', 'GET', null, 5);
 
@@ -39,6 +58,10 @@ class BotStatusController extends Controller {
         ]);
     }
 
+    /**
+     * API endpoint untuk mendapatkan QR code login WhatsApp.
+     * Mengembalikan QR code dalam format JSON.
+     */
     public function getQr() {
         $result = $this->callBotApi('/api/qr', 'GET', null, 5);
 
@@ -56,6 +79,10 @@ class BotStatusController extends Controller {
         ]);
     }
 
+    /**
+     * API endpoint untuk me-restart bot.
+     * Hanya dapat diakses oleh admin.
+     */
     public function restart() {
         if (!$this->isAdmin()) {
             $this->respondJson([
@@ -79,6 +106,10 @@ class BotStatusController extends Controller {
         ], 503);
     }
 
+    /**
+     * API endpoint untuk logout bot dari WhatsApp.
+     * Hanya dapat diakses oleh admin.
+     */
     public function logout() {
         if (!$this->isAdmin()) {
             $this->respondJson([
@@ -102,6 +133,10 @@ class BotStatusController extends Controller {
         ], 503);
     }
 
+    /**
+     * API endpoint untuk memeriksa apakah sebuah nomor terdaftar di WhatsApp.
+     * Hanya dapat diakses oleh admin.
+     */
     public function checkNumber() {
         if (!$this->isAdmin()) {
             $this->respondJson([
@@ -135,10 +170,24 @@ class BotStatusController extends Controller {
         ]);
     }
 
+    /**
+     * Memeriksa apakah pengguna saat ini adalah admin.
+     *
+     * @return bool True jika admin, false jika bukan.
+     */
     private function isAdmin() {
         return isset($_SESSION['role']) && $_SESSION['role'] === 'admin';
     }
 
+    /**
+     * Melakukan panggilan ke WA Bot API menggunakan cURL.
+     *
+     * @param string $endpoint Endpoint API yang dituju (misal: '/api/status').
+     * @param string $method Metode HTTP (GET, POST, dll.).
+     * @param mixed|null $payload Data yang dikirim dalam body request.
+     * @param int $timeout Batas waktu koneksi dalam detik.
+     * @return array Hasil panggilan API, termasuk status sukses, body, dan error.
+     */
     private function callBotApi($endpoint, $method = 'GET', $payload = null, $timeout = 10) {
         $baseUrl = $this->getApiBaseUrl();
         $url = rtrim($baseUrl, '/') . $endpoint;
@@ -188,16 +237,33 @@ class BotStatusController extends Controller {
         ];
     }
 
+    /**
+     * Mendapatkan URL dasar untuk WA Bot API dari environment variables.
+     *
+     * @return string URL dasar API.
+     */
     private function getApiBaseUrl() {
         $host = $_ENV['WA_BOT_API_HOST'] ?? 'localhost';
         $port = $_ENV['WA_BOT_API_PORT'] ?? 3001;
         return sprintf('http://%s:%s', $host, $port);
     }
 
+    /**
+     * Memeriksa apakah kode status HTTP menunjukkan keberhasilan (2xx).
+     *
+     * @param int $code Kode status HTTP.
+     * @return bool True jika sukses, false jika tidak.
+     */
     private function isSuccessfulHttpCode($code) {
         return $code >= 200 && $code < 300;
     }
 
+    /**
+     * Mengirimkan respon dalam format JSON dengan kode status HTTP.
+     *
+     * @param array $payload Data yang akan di-encode ke JSON.
+     * @param int $statusCode Kode status HTTP.
+     */
     private function respondJson(array $payload, int $statusCode = 200) {
         header('Content-Type: application/json');
         http_response_code($statusCode);

@@ -1,12 +1,27 @@
 <?php
+/**
+ * Class DashboardController
+ *
+ * Mengelola halaman dashboard utama. Membutuhkan otentikasi pengguna.
+ */
 class DashboardController extends Controller {
+    /**
+     * DashboardController constructor.
+     *
+     * Memeriksa apakah pengguna sudah login. Jika tidak, arahkan ke halaman login.
+     */
     public function __construct() {
         if (!isset($_SESSION['user_id'])) {
-            header('Location: ' . BASE_URL);
+            header('Location: '. BASE_URL);
             exit;
         }
     }
 
+    /**
+     * Menampilkan halaman dashboard.
+     *
+     * Mengambil data statistik dari model dan menampilkannya di view dashboard.
+     */
     public function index() {
         $submissionModel = $this->model('Submission_model');
 
@@ -75,9 +90,14 @@ class DashboardController extends Controller {
         $this->view('templates/footer');
     }
     
+    /**
+     * Mengambil status WA Bot dari API.
+     *
+     * @return array Status bot, termasuk 'status', 'timestamp', 'last_update', dan 'error'.
+     */
     private function getWaBotStatus() {
         // Mendapatkan status dari WA Bot API
-        $apiUrl = 'http://localhost:' . ($_ENV['WA_BOT_API_PORT'] ?? 3001) . '/api/status';
+        $apiUrl = 'http://localhost:'. ($_ENV['WA_BOT_API_PORT'] ?? 3001). '/api/status';
         
         $context = stream_context_create([
             'http' => [
@@ -115,6 +135,9 @@ class DashboardController extends Controller {
         ];
     }
     
+    /**
+     * API endpoint untuk mendapatkan status bot dalam format JSON.
+     */
     public function getBotStatus() {
         $status = $this->getWaBotStatus();
         
@@ -122,6 +145,9 @@ class DashboardController extends Controller {
         echo json_encode($status);
     }
 
+    /**
+     * API endpoint untuk mendapatkan data monitoring TU berdasarkan tanggal.
+     */
     public function getTuMonitoringByDate() {
         $dateParam = $_GET['date'] ?? null;
         $validatedDate = $this->sanitizeFileDate($dateParam);
@@ -147,6 +173,12 @@ class DashboardController extends Controller {
         ]);
     }
 
+    /**
+     * Membersihkan dan memvalidasi tanggal dari berbagai format.
+     *
+     * @param string|null $date Tanggal dalam berbagai format.
+     * @return string|null Tanggal yang sudah diformat ke 'Y-m-d' atau null jika tidak valid.
+     */
     private function sanitizeFileDate($date) {
         if (!$date) {
             return null;
@@ -162,7 +194,7 @@ class DashboardController extends Controller {
         ];
 
         foreach ($formats as $format) {
-            $dateTime = DateTime::createFromFormat('!' . $format, $date);
+            $dateTime = DateTime::createFromFormat('!'. $format, $date);
             if ($dateTime === false) {
                 continue;
             }

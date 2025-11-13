@@ -1,5 +1,18 @@
 <?php
+/**
+ * Class KontakController
+ *
+ * Controller untuk mengelola data kontak WhatsApp.
+ * Menyediakan fungsionalitas CRUD (Create, Read, Update, Delete),
+ * impor dari file CSV, dan unduh template.
+ * Membutuhkan otentikasi pengguna.
+ */
 class KontakController extends Controller {
+    /**
+     * KontakController constructor.
+     *
+     * Memeriksa otentikasi pengguna.
+     */
     public function __construct() {
         if (!isset($_SESSION['user_id'])) {
             header('Location: ' . BASE_URL);
@@ -7,6 +20,10 @@ class KontakController extends Controller {
         }
     }
 
+    /**
+     * Menampilkan halaman utama manajemen kontak dengan daftar kontak,
+     * fungsionalitas pencarian, dan paginasi.
+     */
     public function index() {
         $kontakModel = $this->model('Kontak_model');
         $counterModel = $this->model('DownloadCounter_model');
@@ -88,6 +105,9 @@ class KontakController extends Controller {
         $this->view('templates/footer');
     }
 
+    /**
+     * Menambahkan kontak baru. Hanya menerima request POST.
+     */
     public function tambah() {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $kontakModel = $this->model('Kontak_model');
@@ -111,6 +131,9 @@ class KontakController extends Controller {
         }
     }
 
+    /**
+     * Memperbarui kontak yang ada. Hanya menerima request POST.
+     */
     public function update() {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $kontakModel = $this->model('Kontak_model');
@@ -135,6 +158,11 @@ class KontakController extends Controller {
         }
     }
 
+    /**
+     * Menghapus kontak berdasarkan ID.
+     *
+     * @param int $id ID kontak yang akan dihapus.
+     */
     public function hapus($id) {
         $kontakModel = $this->model('Kontak_model');
         
@@ -148,6 +176,9 @@ class KontakController extends Controller {
         exit;
     }
 
+    /**
+     * Mengimpor kontak dari file CSV. Hanya menerima request POST.
+     */
     public function import() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header('Location: ' . BASE_URL . '/KontakController');
@@ -288,6 +319,11 @@ class KontakController extends Controller {
         exit;
     }
 
+    /**
+     * Menyediakan file template CSV untuk diunduh.
+     *
+     * @param string $type Tipe template yang akan diunduh.
+     */
     public function downloadTemplate($type = 'default') {
         $counterModel = $this->model('DownloadCounter_model');
         

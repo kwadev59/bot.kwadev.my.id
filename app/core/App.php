@@ -1,9 +1,31 @@
 <?php
+/**
+ * Class App
+ *
+ * Kelas utama yang menangani routing aplikasi.
+ * Mem-parsing URL untuk menentukan controller, method, dan parameter, lalu menjalankannya.
+ */
 class App {
-    protected $controller = 'AuthController'; // Controller default
-    protected $method = 'index'; // Method default
-    protected $params = []; // Parameter default
+    /**
+     * @var string Controller default yang akan digunakan.
+     */
+    protected $controller = 'AuthController';
 
+    /**
+     * @var string Method default yang akan digunakan.
+     */
+    protected $method = 'index';
+
+    /**
+     * @var array Parameter default.
+     */
+    protected $params = [];
+
+    /**
+     * App constructor.
+     *
+     * Mem-parsing URL dan menjalankan controller yang sesuai.
+     */
     public function __construct() {
         $url = $this->parseURL();
 
@@ -44,7 +66,13 @@ class App {
         call_user_func_array([$this->controller, $this->method], $this->params);
     }
 
-    // Method untuk mem-parsing URL agar lebih bersih
+    /**
+     * Mem-parsing URL.
+     *
+     * Membersihkan URL dari karakter yang tidak diinginkan dan memecahnya menjadi array.
+     *
+     * @return array Array yang berisi bagian-bagian dari URL.
+     */
     public function parseURL() {
         if (isset($_GET['url'])) {
             $url = rtrim($_GET['url'], '/');
