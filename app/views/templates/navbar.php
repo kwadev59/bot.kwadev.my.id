@@ -2,41 +2,38 @@
 $activePage = $data['judul'] ?? '';
 $isAdmin = isset($_SESSION['role']) && $_SESSION['role'] === 'admin';
 
-$laporanTypes = ['TU', 'TRB', 'AMANDARB', 'TO', 'TPN', 'TR'];
-$laporanChildren = [];
-foreach ($laporanTypes as $type) {
-    $laporanChildren[] = [
-        'label'    => 'Laporan ' . $type,
-        'icon'     => 'bi-file-earmark-text',
-        'url'      => BASE_URL . '/LaporanController/' . strtolower($type),
-        'isActive' => $activePage === 'Laporan ' . $type
-    ];
-}
-
 $menuItems = [
     [
         'label'    => 'Laporan',
         'icon'     => 'bi-files',
-        'isActive' => strpos($activePage, 'Laporan ') !== false && strpos($activePage, 'Log') === false,
-        'children' => $laporanChildren
-    ],
-    [
-        'label'    => 'Log',
-        'icon'     => 'bi-journal-text',
-        'isActive' => strpos($activePage, 'Log') !== false || strpos($activePage, 'Laporan Valid') !== false || strpos($activePage, 'Laporan Invalid') !== false,
+        'isActive' => strpos($activePage, 'Laporan') !== false,
         'children' => [
             [
                 'label'    => 'Laporan Valid',
                 'icon'     => 'bi-check-circle',
-                'url'      => BASE_URL . '/LogController/valid',
-                'isActive' => $activePage === 'Log Laporan Valid'
+                'url'      => BASE_URL . '/LaporanController/valid',
+                'isActive' => $activePage === 'Laporan Valid'
             ],
             [
                 'label'    => 'Laporan Invalid',
                 'icon'     => 'bi-exclamation-triangle',
-                'url'      => BASE_URL . '/LogController/invalid',
-                'isActive' => $activePage === 'Log Laporan Invalid'
+                'url'      => BASE_URL . '/LaporanController/invalid',
+                'isActive' => $activePage === 'Laporan Invalid'
             ],
+            [
+                'label'    => 'Monitoring TU',
+                'icon'     => 'bi-truck',
+                'url'      => BASE_URL . '/TuMonitoringController',
+                'isActive' => $activePage === 'Monitoring File TU'
+            ],
+        ]
+    ],
+
+    [
+        'label'    => 'Log',
+        'icon'     => 'bi-journal-text',
+        'isActive' => strpos($activePage, 'Log') !== false,
+        'children' => [
             [
                 'label'    => 'Log Duplikat',
                 'icon'     => 'bi-card-checklist',

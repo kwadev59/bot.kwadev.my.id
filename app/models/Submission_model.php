@@ -110,27 +110,12 @@ class Submission_model {
      */
     public function countFilteredSubmissions($status, $filters = []) {
         $joinClause = $this->getKontakJoinClause();
-        $query = "SELECT COUNT(fs.id) AS total FROM {$this->table} fs {$joinClause}";
-        $conditions = [];
-        $params = [];
-
-        if ($status !== 'all') {
-            $conditions[] = "fs.status = :status";
-            $params[':status'] = $status;
-        }
+        $query = "SELECT COUNT(fs.id) AS total FROM {$this->table} fs {$joinClause} WHERE fs.status = :status";
+        $params = [':status' => $status];
 
         if (!empty($filters['search'])) {
-            $conditions[] = "fs.file_name LIKE :search";
             $params[':search'] = '%' . trim($filters['search']) . '%';
-        }
-
-        if (!empty($filters['file_type'])) {
-            $conditions[] = "fs.file_type = :file_type";
-            $params[':file_type'] = $filters['file_type'];
-        }
-
-        if (!empty($conditions)) {
-            $query .= " WHERE " . implode(" AND ", $conditions);
+            $query .= " AND fs.file_name LIKE :search";
         }
 
         $this->db->query($query);
@@ -152,27 +137,12 @@ class Submission_model {
         $joinClause = $this->getKontakJoinClause();
         $kontakNamaExpr = $this->getKontakNamaExpression('fs.sender_number');
 
-        $query = "SELECT fs.*, {$kontakNamaExpr} AS nama_lengkap FROM {$this->table} fs {$joinClause}";
-        $conditions = [];
-        $params = [];
-
-        if ($status !== 'all') {
-            $conditions[] = "fs.status = :status";
-            $params[':status'] = $status;
-        }
+        $query = "SELECT fs.*, {$kontakNamaExpr} AS nama_lengkap FROM {$this->table} fs {$joinClause} WHERE fs.status = :status";
+        $params = [':status' => $status];
 
         if (!empty($options['search'])) {
-            $conditions[] = "fs.file_name LIKE :search";
             $params[':search'] = '%' . trim($options['search']) . '%';
-        }
-
-        if (!empty($options['file_type'])) {
-            $conditions[] = "fs.file_type = :file_type";
-            $params[':file_type'] = $options['file_type'];
-        }
-
-        if (!empty($conditions)) {
-            $query .= " WHERE " . implode(" AND ", $conditions);
+            $query .= " AND fs.file_name LIKE :search";
         }
 
         $kolom_valid = ['submission_date', 'tanggal', 'file_name', 'file_type', 'file_size', 'nama_lengkap'];
