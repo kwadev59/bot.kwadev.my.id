@@ -64,6 +64,7 @@ if ($isTypePage) $colspan = 8;
                     </th>
                     <?php if ($isValidLogPage): ?>
                     <th class="py-2">Ketepatan Kirim</th>
+                    <th class="py-2 text-center">Jml Unduh</th>
                     <?php endif; ?>
                     <?php if ($isValidLogPage || $isTypePage): ?>
                     <th class="py-2 text-center">Jml Unduh</th>
@@ -102,6 +103,7 @@ if ($isTypePage) $colspan = 8;
                                     <span class="badge bg-secondary-subtle text-secondary">Tanggal tidak diketahui</span>
                                 <?php endif; ?>
                             </td>
+                            <td class="align-middle text-center py-2"><?= $laporan['download_count'] ?? 0; ?></td>
                             <?php endif; ?>
                             <?php if ($isValidLogPage || $isTypePage): ?>
                             <td class="align-middle text-center py-2"><?= $laporan['download_count'] ?? 0; ?></td>
