@@ -1,11 +1,23 @@
-<?php $isValidPage = ($data['status_laporan'] ?? '') === 'valid'; ?>
+<?php
+$status = $data['status_laporan'] ?? '';
+$isLogPage = in_array($status, ['valid', 'invalid']);
+$isTypePage = $status === 'by_type';
+$isValidLogPage = $status === 'valid';
+$isInvalidLogPage = $status === 'invalid';
+
+$colspan = 7; // Default for invalid log
+if ($isValidLogPage) $colspan = 9;
+if ($isTypePage) $colspan = 8;
+?>
 
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center mb-4">
-    <h1 class="h3 mb-0 page-title">Laporan <?= ucfirst($data['status_laporan']); ?></h1>
+    <h1 class="h3 mb-0 page-title"><?= htmlspecialchars($data['judul']); ?></h1>
+    <?php if ($isLogPage): ?>
     <div class="btn-group">
-        <a href="<?= BASE_URL; ?>/LaporanController/valid" class="btn <?= $data['status_laporan'] === 'valid' ? 'btn-primary' : 'btn-outline-primary'; ?>">Valid</a>
-        <a href="<?= BASE_URL; ?>/LaporanController/invalid" class="btn <?= $data['status_laporan'] === 'invalid' ? 'btn-primary' : 'btn-outline-primary'; ?>">Invalid</a>
+        <a href="<?= BASE_URL; ?>/LogController/valid" class="btn <?= $isValidLogPage ? 'btn-primary' : 'btn-outline-primary'; ?>">Valid</a>
+        <a href="<?= BASE_URL; ?>/LogController/invalid" class="btn <?= $isInvalidLogPage ? 'btn-primary' : 'btn-outline-primary'; ?>">Invalid</a>
     </div>
+    <?php endif; ?>
 </div>
 
 <?php if (isset($_SESSION['flash'])): ?>
@@ -28,7 +40,7 @@
             </div>
             <div class="col-md-4 d-flex gap-2">
                 <button class="btn btn-primary flex-fill" type="submit"><i class="bi bi-search me-1"></i> Cari</button>
-                <a href="<?= BASE_URL; ?>/LaporanController/<?= $data['status_laporan']; ?>" class="btn btn-secondary flex-fill"><i class="bi bi-arrow-clockwise me-1"></i> Reset</a>
+                <a href="<?= strtok($_SERVER["REQUEST_URI"], '?'); ?>" class="btn btn-secondary flex-fill"><i class="bi bi-arrow-clockwise me-1"></i> Reset</a>
             </div>
         </form>
     </div>
@@ -50,8 +62,11 @@
                             Tanggal File <i class="bi bi-arrow-<?= ($data['sort']['by'] === 'tanggal') ? (($data['sort']['dir'] === 'ASC') ? 'up' : 'down') : 'up'; ?>"></i>
                         </a>
                     </th>
-                    <?php if ($isValidPage): ?>
+                    <?php if ($isValidLogPage): ?>
                     <th class="py-2">Ketepatan Kirim</th>
+                    <?php endif; ?>
+                    <?php if ($isValidLogPage || $isTypePage): ?>
+                    <th class="py-2 text-center">Jml Unduh</th>
                     <?php endif; ?>
                     <th class="py-2">
                         <a href="?sort=file_name&dir=<?= ($data['sort']['by'] === 'file_name' && $data['sort']['dir'] === 'ASC') ? 'DESC' : 'ASC'; ?>&search=<?= urlencode($data['filters']['search'] ?? ''); ?>" class="text-decoration-none">
@@ -67,14 +82,14 @@
             <tbody>
                 <?php if (empty($data['laporan'])): ?>
                     <tr>
-                        <td colspan="<?= $isValidPage ? 8 : 7; ?>" class="text-center py-3 text-muted">Tidak ada data laporan <?= $data['status_laporan']; ?>.</td>
+                        <td colspan="<?= $colspan; ?>" class="text-center py-3 text-muted">Tidak ada data laporan.</td>
                     </tr>
                 <?php else: ?>
                     <?php foreach ($data['laporan'] as $laporan): ?>
                         <tr>
                             <td class="align-middle py-2"><?= date('d M Y, H:i', strtotime($laporan['submission_date'])); ?></td>
                             <td class="align-middle py-2"><?= formatFileDate($laporan['tanggal'] ?? null); ?></td>
-                            <?php if ($isValidPage): ?>
+                            <?php if ($isValidLogPage): ?>
                             <td class="align-middle py-2">
                                 <?php if (!empty($laporan['timeliness'])): ?>
                                     <span class="badge <?= htmlspecialchars($laporan['timeliness']['badge_class']); ?>">
@@ -87,6 +102,9 @@
                                     <span class="badge bg-secondary-subtle text-secondary">Tanggal tidak diketahui</span>
                                 <?php endif; ?>
                             </td>
+                            <?php endif; ?>
+                            <?php if ($isValidLogPage || $isTypePage): ?>
+                            <td class="align-middle text-center py-2"><?= $laporan['download_count'] ?? 0; ?></td>
                             <?php endif; ?>
                             <td class="align-middle py-2">
                                 <div class="d-flex align-items-center">
@@ -111,7 +129,7 @@
                                     <a href="<?= BASE_URL; ?>/LaporanController/download/<?= $laporan['id']; ?>" class="btn btn-outline-primary" title="Download">
                                         <i class="bi bi-download"></i>
                                     </a>
-                                    <?php if ($data['status_laporan'] === 'invalid'): ?>
+                                    <?php if ($isInvalidLogPage): ?>
                                     <button type="button" class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#renameModal" 
                                             data-id="<?= $laporan['id']; ?>" data-filename="<?= htmlspecialchars($laporan['file_name']); ?>" title="Perbaiki">
                                         <i class="bi bi-pencil"></i>
